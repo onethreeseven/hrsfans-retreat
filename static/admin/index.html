@@ -1,0 +1,491 @@
+<html>
+
+<head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+    <link rel='stylesheet' type='text/css' href='static/style.css'>
+    <link rel="icon" type="image/png" href="static/favicon.png" />
+    <script type='text/javascript' src='static/knockout-3.0.0.js'></script>
+    <script type='text/javascript' src='static/underscore-min.js'></script>
+    <script type='text/javascript' src='static/jquery-2.0.3.min.js'></script>
+    <script type='text/javascript' src='static/shared.js'></script>
+    <script type='text/javascript' src='static/admin.js'></script>
+    <title>HRSFANS Retreat Registration</title>
+</head>
+
+<body>
+
+    <script type='text/html' id='status-area'>
+        <div class=message>
+            <span data-bind='text: message'></span>
+            <span data-bind='visible: message() && can_set_visible()'> | </span>
+            <a
+                class='pointer'
+                data-bind='text: hide_toggle_text, click: toggle_visible, visible: can_set_visible'
+            ></a>
+            <span data-bind='visible: message() || can_set_visible()'> | </span>
+            <a
+                class='pointer'
+                data-bind='text: show_entire_toggle_text, click: toggle_show_only'
+            ></a>
+        </div>
+    </script>
+
+    <!-- ko if: loaded -->
+    <div class='section header' data-bind='visible: !show_only_section()'>
+        <p>Welcome to the admin page.</p>
+        <p class='logout'>
+            <a class="pointer" data-bind='click: refresh_state'>Refresh now</a> |
+            <a data-bind='attr: { href: logout_url }'>Log out</a>
+        </p>
+    </div>
+
+    <!-- ko with: record_payments --><div
+        class='section'
+        data-bind='css: status, visible: show_entire'
+    >
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Record Payments</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <h2>Add or Edit Payment</h2>
+            <div class="payment_editor">
+                <!-- ko if: edit_payment --><p class='payment_edit_warning'>
+                    Editing selected payment:
+                </p><!-- /ko -->
+                <!-- ko if: !edit_payment() --><p>Recording new payment:</p><!-- /ko -->
+                <p>
+                    <div class="payment_left">Received</div>
+                    $<input
+                        class='money'
+                        data-bind='value: edit_amount, valueUpdate: "afterkeydown"'
+                    ></input>
+                    from
+                    <input
+                        class='payment_input'
+                        data-bind='value: edit_from, valueUpdate: "afterkeydown"'
+                    ></input>
+                    via
+                    <input
+                        class='payment_input'
+                        data-bind='value: edit_via, valueUpdate: "afterkeydown"'
+                    ></input>.
+                </p>
+                <!-- ko foreach: edit_credits -->
+                    <p>
+                        <div class="payment_left">Credit</div>
+                        $<input
+                            class='money'
+                            data-bind='value: amount, valueUpdate: "afterkeydown"'
+                        ></input>
+                        to
+                        <select
+                            class='payment_select'
+                            data-bind='
+                                options: reserved,
+                                optionsText: format_option,
+                                optionsValue: "email",
+                                optionsCaption: "",
+                                value: email
+                            '
+                        ></select>.
+                    </p>
+                <!-- /ko -->
+                <p>
+                    <a class="pointer" data-bind='click: add_edit_credit'>
+                        (attach another registration)
+                    </a>
+                </p>
+                <div class='action-area' data-bind="visible: status() == 'changed'">
+                    <button class='reset-button' data-bind='click: reset'>Reset</button>
+                    <button class='save-button' data-bind='click: submit'>Save</button>
+                    <button
+                        class='delete-button'
+                        data-bind='click: delete_pmt, visible: edit_payment()'
+                    >
+                        Delete
+                    </button>
+                    <span class="note" data-bind='text: change_summary'></span>
+                </div>
+            </div>
+
+            <h2>Previously Recorded</h2>
+            <p>
+                Total received: <b><span data-bind='text: total_received'></span></b>
+            </p>
+            <p class='note'>
+                Click a payment to edit it.  Entries in red have not been fully credited.
+            </p>
+            <table class='payment_records'><tbody data-bind='foreach: payments'>
+                <tr class='payment_record' data-bind='css: status, click: do_click'>
+                    <td class='payment_record_date' data-bind='text: srv_payment.date'></td>
+                    <td class='payment_record_desc' data-bind='foreach: description()'>
+                        <p data-bind='text: $data'></p>
+                    </td>
+                </tr>
+            </tbody></table>
+        </div>
+    </div><!-- /ko -->
+
+    <!-- ko with: financial_summary --><div class='section header' data-bind='visible: show_entire'>
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Financial Summary</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <table class='pmt_table' data-bind='with: summary'>
+                <tr>
+                    <td class='pmt_group'>Expected</td>
+                    <td class='pmt_label pmt_charge'>Rooms</td>
+                    <td
+                        class='pmt_value pmt_charge'
+                        data-bind='text: _.dollar_val(rooms, 2)'
+                    ></td>
+                </tr>
+                <tr>
+                    <td class='pmt_group'></td>
+                    <td class='pmt_label pmt_charge'>Meals</td>
+                    <td
+                        class='pmt_value pmt_charge'
+                        data-bind='text: _.dollar_val(meals, 2)'
+                    ></td>
+                </tr>
+                <tr>
+                    <td class='pmt_group'></td>
+                    <td class='pmt_label pmt_charge'>Transport subsidy (net)</td>
+                    <td
+                        class='pmt_value pmt_charge'
+                        data-bind='text: _.dollar_val(transport, 2)'
+                    ></td>
+                </tr>
+                <tr>
+                    <td class='pmt_group'></td>
+                    <td class='pmt_label pmt_charge'>Financial aid (net)</td>
+                    <td
+                        class='pmt_value pmt_charge'
+                        data-bind='text: _.dollar_val(assistance, 2)'
+                    ></td>
+                </tr>
+                <tr>
+                    <td class='pmt_group'></td>
+                    <td class='pmt_label pmt_charge'>Adjustments (net)</td>
+                    <td
+                        class='pmt_value pmt_charge'
+                        data-bind='text: _.dollar_val(adjustment, 2)'
+                    ></td>
+                </tr>
+                <tr>
+                    <td class='pmt_group'></td>
+                    <td class='pmt_label pmt_zero'>Total</td>
+                    <td
+                        class='pmt_value pmt_zero'
+                        data-bind='text: _.dollar_val(total, 2)'
+                    ></td>
+                </tr>
+                <tr>
+                    <td class='pmt_group'>Current</td>
+                    <td class='pmt_label pmt_credit'>Received*</td>
+                    <td
+                        class='pmt_value pmt_credit'
+                        data-bind='text: _.dollar_val(received, 2)'
+                    ></td>
+                </tr>
+                <tr>
+                    <td class='pmt_group'></td>
+                    <td class='pmt_label pmt_due'>Due</td>
+                    <td
+                        class='pmt_value pmt_due'
+                        data-bind='text: _.dollar_val(due, 2)'
+                    ></td>
+                </tr>
+            </table>
+            <p class="note">
+                *This is computed differently from the amount in the previous section, but should
+                match it.  If it doesn't, there's a problem!
+            </p>
+        </div>
+    </div><!-- /ko -->
+
+    <!-- ko with: registrations --><div class='section header' data-bind='visible: show_entire'>
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Registrations</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <p>
+                <b><span data-bind='text: data().summary.total'></span></b> registrations
+                (<b><span data-bind='text: data().summary.unreserved'></span></b> unreserved,
+                <b><span data-bind='text: data().summary.unpaid'></span></b> unpaid).
+            </p>
+            </p>
+            <table class="admin_reg_table">
+                <tr>
+                    <th>Name</th>
+                    <th>Nights</th>
+                    <th>Amount Due</th>
+                </tr>
+                <tbody data-bind='foreach: data().details'>
+                    <tr>
+                        <td
+                            class='admin_reg_name'
+                            data-bind='text: label'
+                        ></td>
+                        <td
+                            class='admin_reg_nights'
+                            data-bind='
+                                text: nights > 0 ? nights : "",
+                                css: nights > 0 ? "admin_reg_res" : "admin_reg_nores"
+                            '
+                        ></td>
+                        <td
+                            class='admin_reg_amt'
+                            data-bind='
+                                text: Math.abs(due) >= 0.01 ? _.dollar_val(due, 2) : "",
+                                css: Math.abs(due) >= 0.01 ? "admin_reg_due" : "admin_reg_paid"
+                            '
+                        ></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div><!-- /ko -->
+
+    <!-- ko with: subsidies_and_aid --><div class='section header' data-bind='visible: show_entire'>
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Transport Subsidy, Financial Assistance, and Adjustments</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <h2>Transport Subsidy</h2>
+            <p class='aid_subparagraph'>
+                <span data-bind='text: summary().transport_contributing'></span>
+                people have contributed a total of
+                <span data-bind='text: summary().transport_contributed'></span>;
+                <span data-bind='text: summary().transport_requesting'></span>
+                people are requesting a total of
+                <span data-bind='text: summary().transport_requested'></span>.
+            </p>
+            <p class='aid_subparagraph'>
+                Net surplus or (deficit):
+                <b><span data-bind='text: summary().transport_net'></span></b>
+            </p>
+
+            <h2>Financial Assistance</h2>
+            <p class='aid_subparagraph'>
+                <span data-bind='text: summary().assistance_contributing'></span>
+                people have contributed a total of
+                <span data-bind='text: summary().assistance_contributed'></span>;
+                <span data-bind='text: summary().assistance_requesting'></span>
+                people are requesting a total of
+                <span data-bind='text: summary().assistance_requested'></span>.
+            </p>
+            <p class='aid_subparagraph'>
+                Net surplus or (deficit):
+                <b><span data-bind='text: summary().assistance_net'></span></b>
+            </p>
+
+            <h2>Adjustments</h2>
+            <p class='aid_subparagraph'>
+                Net adjustments:
+                <b><span data-bind='text: summary().adjustment_net'></span></b>
+            </p>
+
+
+            <h2>Details</h2>
+            <!-- ko with: parent.server_data() -->
+                <table class="aid_table">
+                    <tr>
+                        <th>Name</th>
+                        <th>Transport</th>
+                        <th>Assistance</th>
+                        <th>Pledge</th>
+                        <th>Adjustments</th>
+                    </tr>
+                    <tbody data-bind='foreach: reserved'>
+                        <tr>
+                            <td class="aid_name" data-bind='text: name + " (" + email + ")"'></td>
+                            <td
+                                class="aid_amount"
+                                data-bind='
+                                    text: $parents[1].format_val(financial_data.transport_amount),
+                                    css: $parents[1].class_val(financial_data.transport_amount)
+                                '
+                            ></td>
+                            <td
+                                class="aid_amount"
+                                data-bind='
+                                    text: $parents[1].format_val(financial_data.assistance_amount),
+                                    css: $parents[1].class_val(financial_data.assistance_amount)
+                                '
+                            ></td>
+                            <td
+                                class="aid_amount aid_none"
+                                data-bind='text: $parents[1].format_pledge(financial_data)'
+                            ></td>
+                            <td
+                                class="aid_amount"
+                                data-bind='
+                                    text: $parents[1].format_val(financial_data.adjustment_amount),
+                                    css: $parents[1].class_val(financial_data.adjustment_amount)
+                                '
+                            ></td>
+                        </tr>
+                    </tbody>
+                </table>
+            <!-- /ko -->
+        </div>
+    </div><!-- /ko -->
+
+    <!-- ko with: meals --><div class='section header' data-bind='visible: show_entire'>
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Meals</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <!-- ko with: parent -->
+                <table class="meals_table">
+                    <tr>
+                        <th></th>
+                        <!-- ko foreach: party_data.meals -->
+                            <th class="meal_header_name" data-bind='text: name'></th>
+                        <!-- /ko -->
+                        <th>Restrictions</th>
+                    </tr>
+                    <tr>
+                        <td class="meal_summary">Cost</td>
+                        <!-- ko foreach: party_data.meals -->
+                            <td
+                                class="meal_total"
+                                data-bind='text: _.dollar_val(cost)'
+                            ></td>
+                        <!-- /ko -->
+                        <td></td>
+                    </tr>
+                    <!-- ko with: $parent.summary -->
+                        <tr>
+                            <td class="meal_summary reg_yes">Total yes</td>
+                            <!-- ko foreach: $parent.party_data.meals -->
+                                <td
+                                    class="meal_total"
+                                    data-bind='text: $parent[id].yes'
+                                ></td>
+                            <!-- /ko -->
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td class="meal_summary reg_maybe">Total maybe</td>
+                            <!-- ko foreach: $parent.party_data.meals -->
+                                <td
+                                    class="meal_total"
+                                    data-bind='text: $parent[id].maybe'
+                                ></td>
+                            <!-- /ko -->
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td class="meal_summary reg_no">Total no</td>
+                            <!-- ko foreach: $parent.party_data.meals -->
+                                <td
+                                    class="meal_total"
+                                    data-bind='text: $parent[id].no'
+                                ></td>
+                            <!-- /ko -->
+                            <td></td>
+                        </tr>
+                    <!-- /ko -->
+                    <!-- ko foreach: server_data().registrations -->
+                        <!-- ko if: $data.meals -->
+                            <tr>
+                                <td class='meal_name' data-bind='text: name'></td>
+                                <!-- ko foreach: $parent.party_data.meals -->
+                                        <td
+                                            class='meal_cell'
+                                            data-bind='css: "reg_" + $parent.meals[id]'
+                                        ></td>
+                                <!-- /ko -->
+                                <td
+                                    class='meal_restrictions'
+                                    data-bind='
+                                        text: attendee_data.dietary_restrictions,
+                                        attr: { title: attendee_data.dietary_restrictions }
+                                    '
+                                ></td>
+                            </tr>
+                        <!-- /ko -->
+                    <!-- /ko -->
+                </table>
+            <!-- /ko -->
+        </div>
+    </div><!-- /ko -->
+
+    <!-- ko with: personal_info --><div class='section header' data-bind='visible: show_entire'>
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Medical and Emergency Information</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <!-- ko with: summary -->
+                <p><span data-bind="text: $data.length"></span> attendees:</p>
+                <div data-bind="foreach: $data">
+                    <h3>
+                        <span data-bind="text: name"></span>
+                        (<span data-bind="text: full"></span>)
+                    </h3>
+                    <p class="personal_item" data-bind="if: guest_of">
+                        <b>Guest of:</b>
+                        <span data-bind="text: guest_of"></span>
+                    </p>
+                    <p class="personal_item">
+                        <b>Emergency Contact:</b>
+                        <span data-bind="text: emergency"></span>
+                    </p>
+                    <p class="personal_item" data-bind="if: medical">
+                        <b>Medical Information:</b>
+                        <span data-bind="text: medical"></span>
+                    </p>
+                </div>
+            <!-- /ko -->
+        </div>
+    </div><!-- /ko -->
+
+    <!-- ko with: email_list --><div class='section header' data-bind='visible: show_entire'>
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Email List</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <!-- ko with: parent.server_data().active -->
+                <p><span data-bind="text: $data.length"></span> attendees:</p>
+                <p class="email_list" data-bind="foreach: $data">
+                    <span data-bind="text: email"></span><br>
+                </p>
+            <!-- /ko -->
+        </div>
+    </div><!-- /ko -->
+
+    <!-- ko with: phone_list --><div class='section header' data-bind='visible: show_entire'>
+        <div data-bind="template: { name: 'status-area', data: $data }"></div>
+        <h1>Phone List</h1>
+
+        <div class='section-body' data-bind='visible: visible'>
+            <!-- ko with: table -->
+                <p><span data-bind="text: $data.length"></span> attendees:</p>
+                <table class="phone_table">
+                    <tbody data-bind="foreach: $data">
+                        <tr>
+                            <td class="phone_table_name" data-bind="text: $data[0]"></td>
+                            <td
+                                class="phone_table_phone"
+                                data-bind="text: $data[1], attr: { title: $data[1] }"
+                            ></td>
+                            <td class="phone_table_separator"></td>
+                            <td
+                                class="phone_table_phone"
+                                data-bind="text: $data[2], attr: { title: $data[2] }"
+                            ></td>
+                            <td class="phone_table_name" data-bind="text: $data[3]"></td>
+                        </tr>
+                    <tbody>
+                </table>
+            <!-- /ko -->
+        </div>
+    </div><!-- /ko -->
+
+    <!-- /ko -->
+
+</body>
+
+</html>
