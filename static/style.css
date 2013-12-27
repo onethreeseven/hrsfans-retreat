@@ -12,10 +12,12 @@ body {
     font-size: 14px;
 }
 
-input, select, button, textarea {
-    background-color: #cdf;
-    color: #000;
+input, select, button, textarea, td {
     border: 1px solid black;
+}
+
+td.borderless {
+    border: none;
 }
 
 textarea {
@@ -27,21 +29,9 @@ li {
     padding-top: 5px;
 }
 
-.note, .logout {
-    font-size: 11px;
-}
-
-.pointer {
-    cursor: pointer;
-}
-
 a {
     text-decoration: none;
     color: #11e;
-}
-
-h1 {
-    font-size: 24px;
 }
 
 h2 {
@@ -56,8 +46,131 @@ table {
     border-collapse: collapse;
 }
 
+.pointer {
+    cursor: pointer;
+}
 
-/* Login */
+
+/* Standard cell types */
+.cell_name_short, .cell_name {
+    overflow: hidden;
+    text-overflow: "";
+    white-space: nowrap;
+}
+
+.cell_info_medium, .cell_info_wide, .cell_info_xwide {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cell_name_short {
+    width: 85px;
+    max-width: 85px;
+}
+
+.cell_name {
+    width: 100px;
+    max-width: 100px;
+}
+
+.cell_label_short {
+    width: 100px;
+    max-width: 100px;
+}
+
+.cell_label_medium {
+    width: 150px;
+    max-width: 150px;
+}
+
+.cell_info_medium {
+    width: 200px;
+    max-width: 200px;
+}
+
+.cell_info_wide {
+    width: 300px;
+    max-width: 300px;
+}
+
+.cell_info_xwide {
+    width: 400px;
+    max-width: 400px;
+}
+
+.cell_value {
+    width: 80px;
+    max-width: 80px;
+    text-align: right;
+}
+
+.cell_cost {
+    width: 25px;
+    max-width: 25px;
+    text-align: right;
+    padding-right: 3px;
+}
+
+.cell_label_medium_plus_cost {
+    width: 180px;
+    max-width: 180px;
+}
+
+
+/* Color scheme */
+.bg_green {
+    background-color: #6f9;
+}
+
+.bg_purple {
+    background-color: #a9f;
+}
+
+.bg_yellow {
+    background-color: #ff8;
+}
+
+.bg_red {
+    background-color: #faa;
+}
+
+.bg_gray {
+    background-color: #eee;
+}
+
+.bg_xdarkgray {
+    background-color: #666;
+}
+
+.bg_slate, input, select, button, textarea {
+    background-color: #cdf;
+}
+
+.bg_purple_green {
+    background-color: #6f9;
+    background-image: linear-gradient(to right, #a9f, #6f9 80%);
+}
+
+.bg_green_purple {
+    background-color: #6f9;
+    background-image: linear-gradient(to left, #a9f, #6f9 80%);
+}
+
+input, select, button, textarea {
+    color: #000;
+}
+
+.color_red {
+    color: #f00;
+}
+
+
+/* Misc, still to be cleaned up */
+.note, .logout {
+    font-size: 11px;
+}
+
 .login-container-1 {
     top: 0;
     left: 0;
@@ -66,6 +179,7 @@ table {
     position: absolute;
     display: table;
 }
+
 .login-container-2 {
     display: table-cell;
     vertical-align: middle;
@@ -77,7 +191,6 @@ table {
     padding: 10px;
     margin: auto;
     display: block;
-    background-color: #fff;
     border: 1px solid black;
 }
 
@@ -97,22 +210,45 @@ input.login-input {
     width: 200px;
 }
 
-img.login-logo {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-}
-
-
-/* Main */
-div.section {
+.section, .header_section {
     position: relative;
     max-width: 1000px;
-    margin-bottom: 20px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 10px;
     border: 1px solid black;
+}
+
+.section {
+    padding: 30px 10px 10px 10px;
+    margin: 0px auto 0px auto;
+}
+
+.header_section {
+    padding: 5px 10px 5px 10px;
+    margin: 0px auto 0px auto;
+}
+
+.selector_section {
+    width: 100%;
+    max-width: 1020px;
+    display: table;
+    table-layout: fixed;
+    padding: 0px;
+    margin: 25px auto 10px auto;
+}
+
+.section_selector_container {
+    display: table-cell;
+}
+
+.section_selector {
+    margin-left: 5px;
+    margin-right: 5px;
+    padding: 5px;
+    border: 1px solid black;
+}
+
+.section_selected {
+    font-weight: bold;
+    border: 2px solid black;
 }
 
 div.subsection {
@@ -128,21 +264,17 @@ div.subsection {
     border: 1px solid black;
 }
 
-div.message {
+.message {
     position: absolute;
     right: 18px;
     top: 18px;
+    font-weight: bold;
 }
 
 .logout {
     position: absolute;
     right: 15px;
-    bottom: 10px;
-}
-
-.reset-button {
-    background-color: #faa;
-    cursor: pointer;
+    bottom: 5px;
 }
 
 .save-button {
@@ -175,10 +307,6 @@ div.message {
     background-color: #fff;
 }
 
-.address {
-    margin-left: 30px;
-}
-
 .authorization-list-container {
     background-color: #eee;
     border: 1px solid black;
@@ -191,101 +319,37 @@ table.authorization-list {
     width: 600px;
 }
 
-th.authorization-email {
-    width: 300px;
-}
-
-th.authorization-status {
-    width: 200px;
-}
-
-.authorization_warning {
-    color: #f00;
-}
-
-.authorization-remove {
-    padding-left: 10px;
-}
-
-table.reg_table {
+.reg_table {
     width: 100%;
     table-layout: fixed;
 }
 
 td.reg_label {
-    width: 250px;
+    width: 300px;
     vertical-align: top;
     padding-top: 10px;
     padding-bottom: 10px;
     padding-right: 10px;
 }
 
-table.reg_subtable, table.res_table, table.pmt_table, table.guest_list {
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-table.res_table, table.pmt_table, table.guest_list {
+.res_table, .pmt_table, .guest_list, .payment_records, .admin_reg_table, .aid_table, .meals_table,
+.phone_table {
     margin-left: auto;
     margin-right: auto;
 }
 
-.reg_subtable td, td.res_room, td.res_bed, td.res_cost, td.res_day, td.res_cell, td.pmt_label,
-td.pmt_value, td.guest_day, td.guest_name, td.guest_cell, td.meal_name, td.meal_choice,
-td.meal_cell, td.meal_restrictions, td.meal_summary, td.meal_total, td.phone_table_name,
-td.phone_table_phone {
-    border: 1px solid black;
+.reg_subtable, .res_table, .pmt_table, .guest_list {
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
-td.reg_night, td.reg_meal, td.reg_cost, td.res_room, td.res_bed, td.res_cost, td.res_day,
-td.guest_day, td.guest_name, td.guest_cell {
-    background-color: #eee;
-}
-
-td.reg_night {
-    width: 192px;
-    max-width: 192px;
-}
-
-td.reg_meal {
-    width: 150px;
-    max-width: 150px;
-}
-
-td.reg_cost, td.res_cost {
-    width: 35px;
-    max-width: 35px;
-    text-align: right;
-    padding-right: 5px;
+.admin_reg_table, .aid_table, .meals_table, .phone_table, .payment_records {
+    margin-bottom: 20px;
 }
 
 td.reg_option {
     width: 60px;
     max-width: 60px;
-    cursor: pointer;
-}
-
-td.res_room {
-    width: 150px;
-    max-width: 500px;
-}
-
-td.res_bed {
-    width: 170px;
-    max-width: 170px;
-}
-
-td.res_day {
-    width: 90px;
-    max-width: 90px;
-}
-
-td.res_cell {
-    width: 90px;
-    max-width: 90px;
-    overflow: hidden;
-    text-overflow: "";
-    white-space: nowrap;
 }
 
 td.pmt_group {
@@ -293,100 +357,14 @@ td.pmt_group {
     max-width: 70px;
 }
 
-td.pmt_label {
-    width: 300px;
-    max-width: 300px;
-}
-
-td.pmt_value {
-    width: 70px;
-    max-width: 70px;
-    text-align: right;
-}
-
 td.guest_day {
-    width: 75px;
-    max-width: 75px;
+    width: 95px;
+    max-width: 95px;
     text-align: center;
 }
 
-td.guest_name {
-    width: 120px;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: "";
-    white-space: nowrap;
-}
-
-td.guest_left {
-    background-color: #6f9;
-    background-image: linear-gradient(to right, #a9f, #6f9 80%);
-}
-
-td.guest_center {
-    background-color: #6f9;
-}
-
-td.guest_right {
-    background-color: #6f9;
-    background-image: linear-gradient(to left, #a9f, #6f9 80%);
-}
-
-td.guest_none {
-    background-color: #a9f;
-}
-
-.reg_input, .email {
+.reg_input, .auth_input {
     width: 100%;
-}
-
-.reg_maybe, .pmt_charge {
-    background-color: #cdf;
-}
-
-.reg_yes, .pmt_credit {
-    background-color: #6f9;
-}
-
-.reg_no {
-    background-color: #a9f;
-}
-
-.res_unavailable {
-    background-color: #666;
-    cursor: default;
-}
-
-.res_taken {
-    background-color: #a9f;
-    cursor: default;
-}
-
-.res_available {
-    background-color: #cdf;
-    cursor: pointer;
-}
-
-.res_reserved {
-    background-color: #6f9;
-    cursor: pointer;
-}
-
-.res_changed {
-    background-color: #ff8;
-    cursor: pointer;
-}
-
-.pmt_due {
-    background-color: #ff8;
-}
-
-.pmt_excess {
-    background-color: #caf;
-}
-
-.pmt_zero {
-    background-color: #eee;
 }
 
 div.pmt_subsection, div.payment_editor {
@@ -411,21 +389,10 @@ input.money:disabled {
     border: 1px dotted #aaa;
 }
 
-ul.independent_arrangements {
-    list-style-type: none;
-}
-
-
-/* Admin */
 .email_list {
     font-family: monospace;
     font-size: 10px;
     padding-left: 15px;
-}
-
-table.payment_records {
-    margin-left: auto;
-    margin-right: auto;
 }
 
 input.payment_input {
@@ -436,38 +403,13 @@ select.payment_select {
     width: 500px;
 }
 
-.payment_edit_warning {
-    color: #f00;
+select.expense_select {
+    width: 300px;
 }
 
 .payment_left {
     display: inline-block;
     min-width: 75px;
-}
-
-.payment_okay {
-    background-color: #eee;
-}
-
-.payment_error {
-    background-color: #fbd;
-}
-
-.payment_editing {
-    background-color: #ff8;
-}
-
-.payment_record {
-    cursor: pointer;
-}
-
-.payment_record_date, .payment_record_desc {
-    border: 1px solid black;
-}
-
-.payment_record_date {
-    width: 100px;
-    max-width: 100px;
 }
 
 .payment_record_desc {
@@ -480,78 +422,10 @@ select.payment_select {
     margin-top: 2px;
 }
 
-.admin_reg_table, .aid_table, .meals_table, .phone_table {
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 20px;
-}
-
-.admin_reg_table td, .aid_table td {
-    border: 1px solid black;
-}
-
-.admin_reg_name, .aid_name {
-    width: 400px;
-    max-width: 400px;
-    background-color: #eee;
-}
-
-.admin_reg_nights {
-    width: 60px;
-    max-width: 60px;
-}
-
-.admin_reg_amt {
-    width: 100px;
-    max-width: 100px;
-}
-
-.admin_reg_res {
-    background-color: #6f9;
-}
-
-.admin_reg_nores, .admin_reg_paid {
-    background-color: #eee;
-}
-
-.admin_reg_due {
-    text-align: right;
-    background-color: #ff8;
-}
-
-.aid_amount {
-    width: 90px;
-    text-align: right;
-}
-
-.aid_contributing {
-    background-color: #6f9;
-}
-
-.aid_requesting {
-    background-color: #a9f;
-}
-
-.aid_none {
-    background-color: #eee;
-}
-
 .aid_subparagraph {
     margin-left: 15px;
     margin-bottom: 5px;
     margin-top: 0px;
-}
-
-.meal_header_name {
-    width: 55px;
-    max-width: 55px;
-    font-size: 10px;
-}
-
-.meal_name {
-    width: 90px;
-    max-width: 90px;
-    background-color: #eee;
 }
 
 .meal_summary {
@@ -560,31 +434,11 @@ select.payment_select {
 
 .meal_total {
     text-align: right;
-    background-color: #eee;
 }
 
-.meal_restrictions {
-    width: 150px;
-    max-width: 150px;
-    background-color: #eee;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.phone_table_name {
-    width: 100px;
-    max-width: 100px;
-    background-color: #eee;
-}
-
-.phone_table_phone {
-    width: 225px;
-    max-width: 200px;
-    background-color: #ff8;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.meal_cell, .meal_header_name, .meal_total {
+    width: 55px;
+    max-width: 55px;
 }
 
 .phone_table_separator {
@@ -593,4 +447,10 @@ select.payment_select {
 
 .personal_item {
     margin-left: 20px;
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+
+.personal_header {
+    margin-bottom: 8px;
 }

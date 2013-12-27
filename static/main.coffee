@@ -18,7 +18,7 @@ eq_strict = (x, y) ->
         return not y?
     if not y?
         return false
-    return x == y
+    x == y
 
 # Storage for a table cell which toggles its value when clicked, and can cycle through styles
 class ClickableCell
@@ -63,17 +63,28 @@ class FixedCell
 # The main object backing the page.
 class MainPageModel extends PageModel
     constructor: ->
-        # As noted in PageModel, there is some initialization that needs to happen before...
         super()
+
+        @user_data = {}
+        @anon_data = {}
 
         @select_attendees = new SelectAttendees(this)
         @register_attendees = new RegisterAttendees(this)
         @reserve_rooms = new ReserveRooms(this)
-        @pay_for_registration = new PayForRegistration(this)
+        @finalize = new Finalize(this)
+        @payment = new Payment(this)
         @guest_list = new GuestList(this)
 
-        # ...and after the class-specific initializers.  Sigh.
-        @ready()
+        @sections = [
+            @select_attendees,
+            @register_attendees,
+            @reserve_rooms,
+            @finalize,
+            @payment,
+            @guest_list
+        ]
+
+        @refresh_state()
 
     # These methods are required by the parent class
     # Refresh the server state; simply calls the main GET method
@@ -83,19 +94,17 @@ class MainPageModel extends PageModel
     # The callback for the parent class's get_json and post_json.  Delegates actually updating
     # state to the various subsections.
     refresh_cb: (data) =>
-        @select_attendees.server_update data.authorizations
-        @register_attendees.server_update data.registrations
-        @reserve_rooms.server_update data.reservations
-        @pay_for_registration.server_update data.reserved
-        @guest_list.server_update data.guest_list
+        @user_data = data.user_data
+        @anon_data = data.anon_data
 
-        # Runs once to set default visibility on elements and then display the page
-        if not @loaded()
-            @select_attendees.try_set_visible(@select_attendees.status() != 'good')
-            @register_attendees.try_set_visible(@register_attendees.status() != 'good')
-            @reserve_rooms.try_set_visible @reserve_rooms.get_initial_visible()
-            @pay_for_registration.try_set_visible(@pay_for_registration.status() != 'good')
-            @loaded true
+        for section in @sections
+            section.reset()
+
+        # Select the earliest non-good section and display the page
+        for section in @sections.slice(0).reverse()
+            if section.status() != 'good'
+                section.try_set_visible()
+        @loaded true
 
 
 # Next, a series of objects, each backing one of the numbered sections.
@@ -111,12 +120,13 @@ class SelectAttendees extends FormSection
         # when the user clicks the Add link
         @pending_email = ko.observable()
 
-        # The authorizations as returned by the server, an array of objects with 'email' and
-        # 'status' members
-        @server_authorizations = []
-        @authorizations = ko.computed @get_authorizations
+        # Arrays of objects with 'email' and 'status' members
+        @server_authorizations = ko.observable []
+        @authorizations = ko.computed(@get_authorizations)
 
         super parent
+
+    label: '1. Add Emails'
 
     # These methods are required by the parent class
     get_status: =>
@@ -125,18 +135,12 @@ class SelectAttendees extends FormSection
             @message 'You have unsaved changes.'
             return 'changed'
         # The user cannot proceed unless they are authorized on at least one attendee
-        if @server_authorizations.length
-            for authorization in @authorizations()
-                if authorization.status == 'Active'
-                    @message ''
-                    return 'good'
+        for authorization in @authorizations()
+            if authorization.status == 'Active'
+                @message ''
+                return 'good'
         @message 'You have no active registrations.'
-        return 'error'
-
-    server_update: (updated) =>
-        if not _.isEqual(@server_authorizations, updated)
-            @server_authorizations = updated
-            @reset()
+        'error'
 
     # Very simple submit method: send the unsaved changes.
     submit: =>
@@ -145,11 +149,22 @@ class SelectAttendees extends FormSection
             'remove': @pending_deletions()
         @parent.post_json('call/authorizations', message, @message)
 
-    # Very simple reset method: clear the unsaved changes.
+    # Clear the unsaved changes; update the server data
     reset: =>
         @pending_email ''
         @pending_additions []
         @pending_deletions []
+
+        new_server_authorizations = []
+        for email, authorization of @parent.user_data.authorizations
+            if authorization.activated
+                status = 'Active'
+            else if authorization.email_token
+                status = 'Pending email response'
+            else
+                status = 'Email rejected or not yet sent'
+            new_server_authorizations.push(email: email, status: status)
+        @server_authorizations new_server_authorizations
 
     # And, a very simple change summary: just list the unsaved changes.
     get_change_summary: =>
@@ -184,7 +199,7 @@ class SelectAttendees extends FormSection
     # and applying our unsaved changes.
     get_authorizations: =>
         result = []
-        for authorization in @server_authorizations
+        for authorization in @server_authorizations()
             if @pending_deletions.indexOf(authorization.email) < 0
                 result.push authorization
         for email in @pending_additions()
@@ -196,52 +211,52 @@ class SelectAttendees extends FormSection
 # Almost all of the work in this class is delegated to the Registration class below
 class RegisterAttendees extends FormSection
     constructor: (parent) ->
-        @server_regs = []
-        @registrations = ko.observableArray []
+        @sections = ko.observableArray []
 
         super parent
+
+    label: '2. Register'
 
     # These methods are required by the parent class
     get_status: =>
         # Again, most of this just delegates to the child objects
-        if not @registrations().length
+        if not @sections().length
             @message 'You have no active registrations.'
             return 'disabled'
-        for registration in @registrations()
-            if registration().status() == 'changed'
+        for sec in @sections()
+            if sec.status() == 'changed'
                 @message 'You have unsaved changes.'
                 return 'changed'
-        # The user cannot proceed unless they have entered at least one registration
-        for registration in @registrations()
-            if registration().status() == 'good'
-                @message ''
-                return 'good'
-        @message 'You have not entered any registrations.'
-        'error'
-
-    server_update: (updated) =>
-        if not _.isEqual(@server_regs, updated)
-            @server_regs = updated
-            @reset()
+        for sec in @sections()
+            if sec.status() != 'good'
+                @message 'One or more registrations is incomplete.'
+                return 'error'
+        @message ''
+        'good'
 
     reset: =>
-        # This is very slash and burn-- totally recreating the child objects.  But we can only
-        # get here in one of two cases:
-        #   * The user clicked Reset, in which case they probably want everything to be nuked
-        #   * A different user updated one of the registrations.  I expect this to be rare.
-        @registrations(ko.observable new Registration(reg, @parent) for reg in @server_regs)
+        @sections []
+        # We find the registration (if any) for each authorization by linear search; there is
+        # usually only one or two of each
+        for this_email, authorization of @parent.user_data.authorizations
+            this_reg = null
+            for email, reg of @parent.user_data.registrations
+                if email == this_email
+                    this_reg = reg
+                    break
+            @sections.push new Registration(this_email, this_reg, @parent)
 
     # A simplistic change summary; it just shows which registrations have changed.  Possibly it
     # should be more detailed.
     get_change_summary: =>
         changed = []
         errors = []
-        for reg in @registrations()
-            if reg().has_change()
-                if reg().has_error()
-                    errors.push(reg().email)
+        for sec in @sections()
+            if sec.has_change()
+                if sec.has_error()
+                    errors.push(sec.email)
                 else
-                    changed.push(reg().email)
+                    changed.push(sec.email)
 
         result = ''
         if changed.length
@@ -253,62 +268,63 @@ class RegisterAttendees extends FormSection
     # We only allow submitting fully legal registrations (but, of course, also check them server
     # side).  However, if a registration hasn't changed at all, we just ignore it.
     get_allow_submit: =>
-        not _.some(reg().has_change() and reg().has_error() for reg in @registrations())
+        not _.some(sec.has_change() and sec.has_error() for sec in @sections())
 
     submit: =>
         message = []
-        for reg in @registrations()
-            if reg().has_change() and not reg().has_error()
-                message.push reg().submit_message()
+        for sec in @sections()
+            if sec.has_change() and not sec.has_error()
+                message.push sec.submit_message()
 
-        @parent.post_json('call/register', message, @message)
+        @parent.post_json('call/registrations', message, @message)
 
 # This class backs each individual registration; most of the actual work in section 2 happens here.
 class Registration
-    constructor: (server_reg, main_page) ->
-        @server_reg = server_reg
-        # This is just a convenience; note it's not observable, because you can't change it
-        @email = server_reg.email
+    constructor: (email, srv_data, main_page) ->
+        @email = email
+        @srv_data = srv_data
 
         # A ton of observables backing the various sections of the registration form
-        @name = ko.observable server_reg.name
-        @full_name = ko.observable server_reg.attendee_data?.full_name
-        @phone = ko.observable server_reg.attendee_data?.phone
+        @name = ko.observable srv_data?.name
+        @full_name = ko.observable srv_data?.full_name
+        @phone = ko.observable srv_data?.phone
 
         @nights = {}
         for night in main_page.nights
-            @nights[night.id] = ko.observable(new ClickableCell(
+            @nights[night.id] = new ClickableCell(
                 ['no', 'yes'],
-                server_reg.nights?[night.id],
+                srv_data?.nights[night.id],
                 ['no', 'yes'],
-                ['reg_no', 'reg_yes']
-            ))
+                ['bg_purple', 'bg_green']
+            )
 
         @meals = {}
         for meal in main_page.party_data.meals
-            @meals[meal.id] = ko.observable(new ClickableCell(
+            @meals[meal.id] = new ClickableCell(
                 ['no', 'maybe', 'yes'],
-                server_reg.meals?[meal.id],
+                srv_data?.meals[meal.id],
                 ['no', 'maybe', 'yes'],
-                ['reg_no', 'reg_maybe', 'reg_yes']
-            ))
+                ['bg_purple', 'bg_slate', 'bg_green']
+            )
 
-        @dietary_restrictions = ko.observable server_reg.attendee_data?.dietary_restrictions
-        @medical = ko.observable server_reg.attendee_data?.medical
-        @emergency = ko.observable server_reg.attendee_data?.emergency
-        @driving = ko.observable server_reg.registration_data?.driving
-        @guest_of = ko.observable server_reg.registration_data?.guest_of
+        @transport_choice = ko.observable srv_data?.transport_choice
+        @emergency = ko.observable srv_data?.emergency
+        @driving = ko.observable srv_data?.driving
+        @dietary = ko.observable srv_data?.dietary
+        @medical = ko.observable srv_data?.medical
+        @children = ko.observable srv_data?.children
+        @guest = ko.observable srv_data?.guest
 
         # These (and several other features) mirror features on FormSection; possibly this could
         # be a descendant, although FormSection has a lot of unrelated stuff for submitting
         @message = ko.observable ''
-        @status = ko.computed(@get_status).extend(throttle: 50)
+        @status = ko.computed(@get_status).extend(throttle: 25)
 
     # Reports if the registration is invalid.  Note that not all fields are required.  Keep this
     # in sync with the server-side validation code!
     has_error: =>
         if not @name()?.length
-            @message 'Please enter your name for display to others.'
+            @message 'Please enter your name for display.'
             return true
         if not @full_name()?.length
             @message 'Please enter your full name.'
@@ -316,296 +332,245 @@ class Registration
         if not @phone()?.length
             @message 'Please enter your phone number.'
             return true
-        if not _.some(cell().value() == 'yes' for id, cell of @nights)
+        if not _.some(cell.value() == 'yes' for id, cell of @nights)
             @message 'Please select at least one night.'
+            return true
+        else if not @transport_choice()?.length
+            @message 'Please tell us how you plan to get to the party.'
             return true
         else if not @emergency()?.length
             @message 'Please provide emergency contact information.'
             return true
+        @message ''
         false
 
     # Reports if the registration has changed.
     has_change: =>
-        if not eq(@name(), @server_reg.name)
+        if not eq(@name(), @srv_data?.name)
             return true
-        if not eq(@full_name(), @server_reg.attendee_data?.full_name)
+        if not eq(@full_name(), @srv_data?.full_name)
             return true
-        if not eq(@phone(), @server_reg.attendee_data?.phone)
+        if not eq(@phone(), @srv_data?.phone)
             return true
-        if _.some(cell().changed() for id, cell of @nights)
+        if _.some(cell.changed() for id, cell of @nights)
             return true
-        if _.some(cell().changed() for id, cell of @meals)
+        if _.some(cell.changed() for id, cell of @meals)
             return true
-        if not eq(@dietary_restrictions(), @server_reg.attendee_data?.dietary_restrictions)
+        if not eq(@transport_choice(), @srv_data?.transport_choice)
             return true
-        if not eq(@medical(), @server_reg.attendee_data?.medical)
+        if not eq(@emergency(), @srv_data?.emergency)
             return true
-        if not eq(@emergency(), @server_reg.attendee_data?.emergency)
+        if not eq(@driving(), @srv_data?.driving)
             return true
-        if not eq(@driving(), @server_reg.registration_data?.driving)
+        if not eq(@dietary(), @srv_data?.dietary)
             return true
-        if not eq(@guest_of(), @server_reg.registration_data?.guest_of)
+        if not eq(@medical(), @srv_data?.medical)
+            return true
+        if not eq(@children(), @srv_data?.children)
+            return true
+        if not eq(@guest(), @srv_data?.guest)
             return true
         false
 
     # Get the status, again parallel to FormSection
     get_status: =>
         @message ''
-        result = 'good'
-        if @has_error()
-            result = 'error'
         if @has_change()
-            result = 'changed'
-        result
+            return 'changed'
+        if @has_error()
+            return 'error'
+        'good'
 
     # Helper for submit_message
     cell_values: (cells) =>
         result = {}
         for id, cell of cells
-            result[id] = cell().value() ? ''
+            result[id] = cell.value() ? ''
         result
 
     # Package the contents for submission to the server
     submit_message: =>
         email: @email
         name: @name() ? ''
+        full_name: @full_name() ? ''
+        phone: @phone() ? ''
         nights: @cell_values @nights
         meals: @cell_values @meals
-        attendee_data:
-            full_name: @full_name() ? ''
-            phone: @phone() ? ''
-            dietary_restrictions: @dietary_restrictions() ? ''
-            medical: @medical() ? ''
-            emergency: @emergency() ? ''
-        registration_data:
-            driving: @driving() ? ''
-            guest_of: @guest_of() ? ''
+        transport_choice: @transport_choice() ? ''
+        emergency: @emergency() ? ''
+        driving: @driving() ? ''
+        dietary: @dietary() ? ''
+        medical: @medical() ? ''
+        children: @children() ? ''
+        guest: @guest() ? ''
 
 
 # Section 3: reserving rooms
 class ReserveRooms extends FormSection
     constructor: (parent) ->
-        # These are just conveniences; we also have access to parent
-        @rooms = parent.party_data.rooms
-        @nights = parent.nights
-
-        @server_res = {}
-        # This is a minor hack to let us update status without making server_res an observable
+        # These let us update server-based status without making the server state observable
         @has_active_reg = ko.observable false
-        @has_reserved_reg = ko.observable false
+        @unreserved_regs = ko.observable false
 
         # A map from <night>|<room> ids to ClickableCells (or FixedCells)
         @cells = {}
-        for night in @nights
-            for id, group of @rooms
+        for night in parent.nights
+            for id, group of parent.party_data.rooms
                 for room in group
-                    key = night.id + '|' + room.id
-                    @cells[key] = ko.observable new FixedCell('Loading...', 'res_unavailable')
-        @status_by_email = ko.observableArray []
-        @display_independent = ko.computed(@get_display_independent).extend(throttle: 50)
+                    for bed in room.beds
+                        key = night.id + '|' + bed.id
+                        @cells[key] = ko.observable new FixedCell('Loading...', 'bg_xdarkgray')
 
         # Utility observables for status reporting
-        @num_changed_cells = ko.computed(@count_changed_cells).extend(throttle: 50)
-        @completed_res = ko.computed(=> @get_changed_res true).extend(throttle: 50)
-        @uncompleted_res = ko.computed(=> @get_changed_res false).extend(throttle: 50)
+        @num_changed_cells = ko.computed(@get_num_changed_cells).extend(throttle: 25)
 
         super parent
 
+    label: '3. Reserve Rooms'
+
     # These methods are required by the parent class
     get_status: =>
-        if not @parent.party_data.reservations_enabled
+        if not (@parent.party_data.reservations_enabled or @parent.is_admin)
             @message 'Room reservations are not yet open.'
             return 'error'
         if not @has_active_reg()
             @message 'You have not entered any registrations.'
             return 'error'
-        if @num_changed_cells() or @completed_res().length or @uncompleted_res().length
+        if @num_changed_cells()
             @message 'You have unsaved changes.'
             return 'changed'
-        if @has_reserved_reg()
-            @message ''
-            return 'good'
-        @message 'You have not reserved rooms for any registrations.'
-        'error'
+        if @unreserved_regs().length
+            @message 'Warning: you have not reserved a room for one or more nights.'
+            return 'error'
+        @message ''
+        'good'
 
     # A relatively simplistic change summary, but there's not much complexity to be had
     get_change_summary: =>
-        result = ''
         changed_cells = @num_changed_cells()
         if changed_cells
-            result += 'Changing ' + changed_cells + ' room(s).  '
-        completed_res = @completed_res()
-        if completed_res.length
-            result += 'Completing registrations for: ' + completed_res.join(', ') + '.  '
-        uncompleted_res = @uncompleted_res()
-        if uncompleted_res.length
-            result += 'Un-completing registrations for: ' + uncompleted_res.join(', ') +
-                '.  Do you really mean to do that?'
-        result
+            return 'Changing ' + changed_cells + ' room(s).'
+        ''
 
     # Submits the reservations requested, as well as the registrations to mark complete.  We trust
     # the user to mark registrations complete, since they can theoretically do so without reserving
     # anything
     submit: =>
-        reservations = {}
+        message = {}
         for key, cell of @cells
             if cell().changed?()
-                reservations[key] = cell().value()
-        message =
-            reservations: reservations
-            complete: @completed_res()
-            uncomplete: @uncompleted_res()
+                message[key] = cell().value()
+        @parent.post_json('call/reservations', message, @message)
 
-        @parent.post_json('call/reserve', message, @message)
-
-    server_update: (updated) =>
-        if not _.isEqual(@server_res, updated)
-            @server_res = updated
-            @reset()
-
-    # This is pretty slash-and-burn; we regenerate all the cells.  I decided not to try to figure
-    # out partial overwriting in the case where our request didn't go through.  Oh well.
+    # Regenerate all the cells and update some status variables
     reset: =>
-        # These are not computed observables; it's probably simpler this way.
-        @has_active_reg(@server_res.active_reg.length > 0)
-        @has_reserved_reg _.some(reg.reserved for reg in @server_res.active_reg)
-
-        # The map of existing reservations typically contains only rooms with any reservation, so
-        # we have to iterate over nights and rooms to construct the table
-        for night in @nights
+        for night in @parent.nights
             # Some arguments for the ClickableCell are fixed across rooms
             options = [null]
             labels = ['']
-            for reg in @server_res.active_reg
-                if night.id in reg.nights
-                    options.push(reg.email)
+            for email, reg of @parent.user_data.registrations
+                if reg.nights[night.id] == 'yes'
+                    options.push(email)
                     labels.push(reg.name)
 
-            for id, group of @rooms
+            for id, group of @parent.party_data.rooms
                 for room in group
-                    key = night.id + '|' + room.id
-                    # FixedCells for rooms we can't reserve.  There are three cases.
-                    # 1. Nobody can reserve anything;
-                    if not @parent.party_data.reservations_enabled or
-                            # 2. Someone has reserved the room;
-                            key of @server_res.unauthorized or
-                            # 3. We have no registrations ready to reserve yet.
-                            options.length < 2
-                        existing = @server_res.unauthorized[key]
-                        if existing
-                            style = 'res_taken'
-                        else
-                            style = 'res_unavailable'
-                        @cells[key] new FixedCell(existing, style)
-                    else
-                        # We have to iterate through all the options to construct the style list
-                        # (see TODO above; I want to replace this with a list of objects)
-                        styles = []
-                        existing = @server_res.authorized[key]
-                        for option in options
-                            if eq(option, existing)
-                                if option
-                                    style = 'res_reserved'
-                                else
-                                    style = 'res_available'
+                    for bed in room.beds
+                        key = night.id + '|' + bed.id
+                        # FixedCells for rooms we can't reserve.  This happens if:
+                        # We can't reserve anything, or
+                        if not (@parent.party_data.reservations_enabled or @parent.is_admin) or (
+                            # We have not already reserved the room, and
+                            key not of @parent.user_data.reservations and (
+                                # Someone else has reserved the room, or
+                                key of @parent.anon_data.reservations or
+                                # We are not attending the party this night, or
+                                options.length < 2 or
+                                # There is no listed cost (meaning the room is not available)
+                                night.id not of bed.costs))
+                            existing = @parent.anon_data.reservations[key]?.registration
+                            if existing
+                                style = 'bg_purple'
                             else
-                                style = 'res_changed'
-                            styles.push style
-                        @cells[key] new ClickableCell(options, existing, labels, styles)
+                                style = 'bg_xdarkgray'
+                            @cells[key] new FixedCell(existing, style)
 
-        # Finally, reset the status entries at the bottom
-        @status_by_email (new RegStatusEntry(reg, this) for reg in @server_res.active_reg)
+                        # ClickableCells for rooms we can reserve.
+                        else
+                            # We have to iterate through all the options to construct the style list
+                            # (see TODO above; I want to replace this with a list of objects)
+                            styles = []
+                            existing = @parent.user_data.reservations[key]?.registration or null
+                            for option in options
+                                if eq(option, existing)
+                                    if option
+                                        style = 'bg_green pointer'
+                                    else
+                                        style = 'bg_slate pointer'
+                                else
+                                    style = 'bg_yellow pointer'
+                                styles.push style
+                            @cells[key] new ClickableCell(options, existing, labels, styles)
+
+        # Lastly, update status variables.
+        @has_active_reg(_.size(@parent.user_data.registrations) > 0)
+        @unreserved_regs @get_unreserved_regs()
 
     # Utility methods
-    count_changed_cells: =>
+    get_num_changed_cells: =>
         result = 0
         for key, cell of @cells
             if cell().changed?()
                 result += 1
-        return result
-
-    # This is bound to computed observables above; it's kind of like functional programming, right?
-    get_changed_res: (complete) =>
-        result = []
-        for status in @status_by_email()
-            # The second part of this is an evil hack to get bool coercion
-            if status.get_changed() and (not complete) == (not status.reservation_complete())
-                result.push status.reg.email
         result
 
-    # If any registration has unreserved nights, display this fact and ask for confirmation
-    get_display_independent: =>
-        for status in @status_by_email()
-            if status.unreserved_nights().length
-                return true
-        false
-
-    # The section is visible if at least one of the active registrations has not reserved rooms
-    get_initial_visible: =>
-        not _.every(reg.reserved for reg in @server_res.active_reg)
-
-# A simple utility class to help display the status of registrations
-class RegStatusEntry
-    constructor: (reg, parent) ->
-        # This is the ReserveRooms object, not the MainPageModel
-        @parent = parent
-        @reg = reg
-        @confirmed = ko.observable reg.reserved
-        @unreserved_nights = ko.computed(@get_unreserved_nights).extend(throttle: 50)
-        @reservation_complete = ko.computed @get_reservation_complete
-
-    # Note that this goes by the completion state; thus if the confirmation checkbox changes and is
-    # then hidden due to the reservation being completed by rooms being selected, the hidden state
-    # does not affect the result
-    get_changed: =>
-        @reservation_complete() != @reg.reserved
-
-    get_reservation_complete: =>
-        @confirmed() or not @unreserved_nights().length
-
-    # Finds the nights that are unreserved.  Uses the straightforward (if possibly expensive)
-    # approach of iterating over all of the cells; there shouldn't be many registrations.
-    get_unreserved_nights: =>
+    get_unreserved_regs: =>
         result = []
-        for night in @parent.nights
-            if night.id not in @reg.nights
-                continue
-            registered = false
-            for id, group of @parent.rooms
-                for room in group
-                    if eq(@parent.cells[night.id + '|' + room.id]().value?(), @reg.email)
+        for reg_email, reg of @parent.user_data.registrations
+            for night, attending of reg.nights
+                if attending != 'yes'
+                    continue
+                registered = false
+                for res_id, res of @parent.user_data.reservations
+                    if reg_email == res.registration and res_id.indexOf(night) == 0
                         registered = true
-            if not registered
-                result.push night.name
+                        break
+                if not registered
+                    result.push reg.email
+                    break
         result
 
 
-# Section 4: recording subsidy and financial aid choices, and displaying payment due
-class PayForRegistration extends FormSection
+# Section 4: recording subsidy and financial aid choices, and confirming
+class Finalize extends FormSection
     constructor: (parent) ->
-        @server_status = {}
-        @sections = ko.observableArray []
-        @total_due = ko.computed @get_total_due
-        # This is used to determine whether to display payment / refund information or a thank-you
-        @display_section = ko.computed @get_display_section
+        @sections = ko.observable []
 
         super parent
 
-    # These methods are required by the parent class
-    server_update: (updated) =>
-        if not _.isEqual(@server_status, updated)
-            @server_status = updated
-            @reset()
+    label: '4. Confirm'
 
+    # These methods are required by the parent class
     reset: =>
-        @sections (new PaymentSection(status) for status in @server_status)
+        @sections(new FinalizeSection(email, reg, @parent) \
+                  for email, reg of @parent.user_data.registrations)
 
     get_change_summary: =>
-        emails = []
+        changed = []
+        errors = []
         for sec in @sections()
             if sec.has_change()
-                emails.push sec.srv_data.email
-        'Changed options for: ' + emails.join(', ')
+                if sec.has_error()
+                    errors.push sec.email
+                else
+                    changed.push sec.email
+
+        result = ''
+        if changed.length
+            result += 'Ready to confirm registration for: ' + changed.join(', ') + '.  '
+        if errors.length
+            result += 'You must enter data and confirm registration for: ' + errors.join(', ') + '.  '
+        result
 
     submit: =>
         message = []
@@ -613,26 +578,30 @@ class PayForRegistration extends FormSection
             if sec.has_change()
                 message.push sec.submit_message()
 
-        @parent.post_json('call/financial', message, @message)
+        @parent.post_json('call/finalize', message, @message)
 
     # The status for the main section keys off of the text displayed, which in turn depends on the
     # total due, not the status for individual sections.  I think that's right.
     get_status: =>
+        if not @parent.party_data.reservations_enabled
+            @message 'Room reservations are not yet open.'
+            return 'disabled'
         if not @sections().length
-            @message 'You have not completed any registrations.'
+            @message 'You have not saved any registrations.'
             return 'disabled'
         if @has_change()
             @message 'You have unsaved changes.'
             return 'changed'
-        switch @display_section()
-            when 'due'
-                @message 'One or more registrations has not been paid for.'
-                return 'error'
-            when 'excess'
-                @message 'You seem to have overpaid for your registrations.'
-                return 'error'
+        if @has_error()
+            @message 'One or more registrations has not been confirmed.'
+            return 'error'
         @message ''
-        return 'good'
+        'good'
+
+    # We only allow submitting confirmed registrations (but, of course, also check them server
+    # side).  However, if a registration hasn't changed at all, we just ignore it.
+    get_allow_submit: =>
+        _.some(sec.has_change() and not sec.has_error() for sec in @sections())
 
     # Utility methods
     has_change: =>
@@ -641,56 +610,38 @@ class PayForRegistration extends FormSection
                 return true
         false
 
-    get_total_due: =>
-        result = 0
+    has_error: =>
         for sec in @sections()
-            result += sec.srv_data.due
-        result
+            if sec.has_error()
+                return true
+        false
 
-    # The use of ">= 0.01" in the below methods guards against floating-point errors
-    get_display_section: =>
-        if @has_change()
-            return ''
-        if @total_due() >= 0.01
-            return 'due'
-        if @total_due() <= -0.01
-            return 'excess'
-        return 'zero'
-
-    # These are used in the HTML for formatting
-    total_label: (due) =>
-        if due >= 0.01
-            return 'Amount Due'
-        if due <= -0.01
-            return 'Excess Paid'
-        ''
-
-    total_style: (due) =>
-        if due >= 0.01
-            return 'pmt_due'
-        if due <= -0.01
-            return 'pmt_excess'
-        return 'pmt_zero'
-
-class PaymentSection
-    constructor: (srv_data) ->
+class FinalizeSection
+    constructor: (email, srv_data, main_page) ->
+        @email = email
         @srv_data = srv_data
+        @main_page = main_page
 
         # These are stored on the server as a single amount: negative for requesting, positive for
         # contributing
-        [transport_choice, transport_value] = @parse_amt srv_data.financial_data.transport_amount
-        @transport_choice = ko.observable transport_choice
-        @transport_value = ko.observable transport_value
+        [subsidy_choice, subsidy_value] = @parse_amt srv_data.subsidy
+        @subsidy_choice = ko.observable subsidy_choice
+        @subsidy_value = ko.observable subsidy_value
 
-        [assistance_choice, assistance_value] = @parse_amt srv_data.financial_data.assistance_amount
-        @assistance_choice = ko.observable assistance_choice
-        @assistance_value = ko.observable assistance_value
+        [aid_choice, aid_value] = @parse_amt srv_data.aid
+        @aid_choice = ko.observable aid_choice
+        @aid_value = ko.observable aid_value
 
-        @assistance_pledge = ko.observable srv_data.financial_data.assistance_pledge
+        @aid_pledge = ko.observable srv_data.aid_pledge
+        @aid = ko.computed @get_aid
+        @subsidy = ko.computed @get_subsidy
 
-        @transport_amt = ko.computed @get_transport_amt
-        @assistance_amt = ko.computed @get_assistance_amt
-        @status = ko.computed @get_status
+        @adjustment = ko.observable srv_data.adjustment
+
+        @confirmed = ko.observable srv_data.confirmed
+
+        @message = ko.observable ''
+        @status = ko.computed(@get_status).extend(throttle: 25)
 
     parse_amt: (amt) =>
         if not amt?
@@ -699,7 +650,7 @@ class PaymentSection
             return ['none', 0.0]
         if amt > 0.0
             return ['contributing', amt]
-        return ['requesting', -amt]
+        ['requesting', -amt]
 
     get_amt: (choice, value) =>
         if choice == 'none'
@@ -711,63 +662,162 @@ class PaymentSection
             result = -result
         result
 
-    get_transport_amt: =>
-        @get_amt(@transport_choice(), @transport_value())
+    get_aid: =>
+        @get_amt(@aid_choice(), @aid_value())
 
-    get_assistance_amt: =>
-        @get_amt(@assistance_choice(), @assistance_value())
+    get_subsidy: =>
+        @get_amt(@subsidy_choice(), @subsidy_value())
 
-    # Reports if the inputs have changed.
+    # Reports if the inputs have changed
     has_change: =>
-        if not eq_strict(@transport_amt(), @srv_data.financial_data?.transport_amount)
+        if not eq_strict(@subsidy(), @srv_data.subsidy)
             return true
-        if not eq_strict(@assistance_amt(), @srv_data.financial_data?.assistance_amount)
+        if not eq_strict(@aid(), @srv_data.aid)
             return true
-        if not eq(@assistance_pledge(), @srv_data.financial_data?.assistance_pledge)
+        if not eq(@aid_pledge(), @srv_data.aid_pledge)
+            return true
+        if not eq(@adjustment(), @srv_data.adjustment)
+            return true
+        if @confirmed() != @srv_data.confirmed
+            return true
+        false
+
+    # Reports if the inputs have an error
+    has_error: =>
+        if not @subsidy()?
+            @message 'Please select a transportation subsidy option.'
+            return true
+        if not @aid()? or (@aid_choice() == 'contributing' and not valid_float(@aid_pledge()))
+            @message 'Please select a financial assistance option.'
+            return true
+        if not @confirmed()
+            @message 'Please confirm this registration.'
             return true
         false
 
     get_status: =>
         if @has_change()
             return 'changed'
-        if @srv_data.due >= 0.01 or @srv_data.due <= -0.01
+        if @has_error()
             return 'error'
         'good'
 
     submit_message: =>
-        email: @srv_data.email
-        financial_data:
-            transport_amount: @transport_amt()
-            assistance_amount: @assistance_amt()
-            assistance_pledge: @assistance_pledge()
+        result =
+            email: @email
+            aid: @aid()
+            aid_pledge: @aid_pledge()
+            confirmed: @confirmed()
+            subsidy: @subsidy()
+        if @main_page.is_admin
+            result.adjustment = @adjustment()
+        result
 
 
-# Section 5: the guest list
-# This section is not interactive, but is backed by a class to hold the server data and provide
-# a utility method
-class GuestList extends FormSection
+# Section 5: displaying payment due
+class Payment extends FormSection
     constructor: (parent) ->
-        @guests = ko.observableArray []
+        @sections = ko.observable []
+        @total_due = ko.computed @get_total_due
+        # This is used to determine whether to display payment / refund information or a thank-you
+        @display_section = ko.computed @get_display_section
 
         super parent
 
-    server_update: (updated) =>
-        @guests updated
+    label: '5. Send Payment'
+
+    # These methods are required by the parent class
+    reset: =>
+        new_sections = []
+        for email, data of @parent.compute_financials(@parent.user_data)
+            data.email = email
+            new_sections.push data
+        @sections new_sections
+
+    # The status for the main section keys off of the text displayed, which in turn depends on the
+    # total due, not the status for individual sections.  I think that's right.
+    get_status: =>
+        if not @sections().length
+            @message 'You have not confirmed any registrations.'
+            return 'disabled'
+        switch @display_section()
+            when 'due'
+                @message 'One or more registrations has not been paid for.'
+                return 'error'
+            when 'excess'
+                @message 'You seem to have overpaid for your registrations.'
+                return 'error'
+        @message ''
+        'good'
+
+    # Utility methods
+    get_total_due: =>
+        result = 0
+        for sec in @sections()
+            result += sec.due
+        result
+
+    # The use of ">= 0.005" in the below methods guards against floating-point errors
+    get_display_section: =>
+        if @total_due() >= 0.005
+            return 'due'
+        if @total_due() <= -0.005
+            return 'excess'
+        return 'zero'
+
+    # These are used in the HTML for formatting
+    total_label: (due) =>
+        if due >= 0.005
+            return 'Amount Due'
+        if due <= -0.005
+            return 'Excess Paid'
+        ''
+
+    total_style: (due) =>
+        if due >= 0.005
+            return 'bg_yellow'
+        if due <= -0.005
+            return 'bg_purple'
+        'bg_gray'
+
+
+# Section 6: the guest list
+# This section is not interactive, but is backed by a class to provide utility methods
+class GuestList extends FormSection
+    constructor: (parent) ->
+        @guests = ko.observable []
+        @counts = ko.observable {}
+
+        super parent
+
+    label: 'Guest List'
+
+    reset: =>
+        @guests _.sortBy(@parent.anon_data.registrations, (reg) -> reg.name.toLowerCase())
+
+        counts = {}
+        for day in @parent.party_data.days
+            count = 0
+            for reg in @parent.anon_data.registrations
+                if reg.nights[day.id] == 'yes'
+                    count += 1
+            counts[day.id] = count
+        @counts counts
 
     # We have data for nights, but want to display days; hence we care about index - 1 (last night)
     # and index (tonight).
     class_for_cell: (index, nights) =>
         last_cell = false
         if index > 0
-            last_cell = @parent.party_data.days[index - 1].id in nights
-        this_cell = @parent.party_data.days[index].id in nights
+            last_cell = nights[@parent.party_data.days[index - 1].id] == 'yes'
+        this_cell = nights[@parent.party_data.days[index].id] == 'yes'
         if last_cell
             if this_cell
-                return 'guest_center'
-            return 'guest_right'
+                return 'bg_green'
+            return 'bg_green_purple'
         if this_cell
-            return 'guest_left'
-        return 'guest_none'
+            return 'bg_purple_green'
+        'bg_purple'
 
 
 # Bind the model

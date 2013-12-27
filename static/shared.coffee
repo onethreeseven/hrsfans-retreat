@@ -1,102 +1,116 @@
 class PageModel
     constructor: ->
-        $.ajax(url: 'call/init', success: @init_cb, async: false)
         @loaded = ko.observable false
-        @show_only_section = ko.observable null
+        @visible_section = ko.observable null
+        $.ajax(url: 'call/init', success: @init_cb, async: false)
 
     init_cb: (data) =>
         document.title = data.party_name
         @party_data = data.party_data
         @logout_url = data.logout_url
         @user_nickname = data.user_nickname
-        @nights = @party_data.days?[...-1]
-
-    # Subclasses will generally want to call part of this class's setup at the top of their
-    # constructor and part at the bottom; hence this awkward extra function.
-    ready: =>
-        @refresh_state()
+        @is_admin = data.is_admin
+        @nights = @party_data.days[...-1]
 
     get_json: (url) =>
         $.get(url, @refresh_cb)
 
     post_json: (url, message, error_cb) =>
         cb = (data) =>
-            error_cb data.error
             @refresh_cb data
+            if data.error?.length
+                error_cb data.error
         $.post(url, {message: JSON.stringify(message)}, cb)
+
+    # This is totally not core engineering, but is in fact needed by both main and admin, so shrug
+    compute_financials: (data) ->
+        result = {}
+
+        # Pull data from the registrations
+        for email, reg of data.registrations
+            if reg.confirmed
+                item =
+                    adjustment: reg.adjustment ? 0.0
+                    aid: reg.aid ? 0.0
+                    aid_pledge: 0.0
+                    credits: []
+                    expenses: []
+                    meals: 0
+                    name: reg.name
+                    rooms: 0
+                    subsidy: reg.subsidy ? 0.0
+                if reg.aid_pledge? and item.aid > 0.0
+                    item.aid_pledge = reg.aid_pledge
+                for meal in @party_data.meals
+                    if reg.meals[meal.id] == 'yes'
+                        item.meals += meal.cost
+                result[email] = item
+
+        # Pull data from the reservations
+        for night in @nights
+            for id, group of @party_data.rooms
+                for room in group
+                    for bed in room.beds
+                        key = night.id + '|' + bed.id
+                        if key of data.reservations
+                            email = data.reservations[key].registration
+                            if email of result
+                                result[email].rooms += bed.costs[night.id]
+
+        # Pull data from the credits
+        for credit in data.credits
+            email = credit.registration
+            if email of result
+                result[email].credits.push(date: credit.date, amount: credit.amount)
+
+        # Pull data from the expenses
+        for id, expense of data.expenses
+            email = expense.registration
+            if email of result
+                result[email].expenses.push(date: expense.date, amount: expense.amount)
+
+        # Sum it up for convenience
+        for email, item of result
+            item.due = item.adjustment + item.aid + item.meals + item.rooms + item.subsidy
+            for credit in item.credits
+                item.due -= credit.amount
+            for expense in item.expenses
+                item.due -= expense.amount
+
+        result
 
 
 class FormSection
     constructor: (parent) ->
         @parent = parent
-        @visible = ko.observable true
         # This gets set by @get_status, so be sure to create it first
         @message = ko.observable()
-        @status = ko.computed =>
-            result = @get_status()
-            @try_set_visible(null, result)
-            result
-        @hide_toggle_text = ko.computed =>
-            if @visible()
-                return 'Hide'
-            'Show'
-        @change_summary = ko.computed(@get_change_summary).extend(throttle: 50)
-        @allow_submit = ko.computed(@get_allow_submit).extend(throttle: 50)
-        @can_set_visible = ko.computed @get_can_set_visible
-        @show_entire = ko.computed @get_show_entire
-        @show_entire_toggle_text = ko.computed =>
-            if @showing_only()
-                return 'Show other sections'
-            return 'Hide other sections'
+        @status = ko.computed @get_status
+        @status_for_selector = ko.computed @get_status_for_selector
+        @change_summary = ko.computed(@get_change_summary).extend(throttle: 25)
+        @allow_submit = ko.computed(@get_allow_submit).extend(throttle: 25)
 
-    try_set_visible: (x, status) =>
-        if @showing_only()
-            @visible true
-            return
-        status ?= @status()
-        switch status
-            when 'disabled'
-                @visible false
-            when 'changed'
-                @visible true
-            else
-                if x?
-                    @visible x
-
-    toggle_visible: =>
-        @try_set_visible not @visible()
+    try_set_visible: =>
+        if @parent.visible_section()?.status() != 'changed' and @status() != 'disabled'
+            @parent.visible_section this
 
     get_status: =>
         @message ''
-        'good'
+        'header'
+
+    get_status_for_selector: =>
+        result = @status()
+        if @parent.visible_section() == this
+            result += ' section_selected'
+        if @parent.visible_section()?.status() != 'changed' and @status() != 'disabled'
+            result += ' pointer'
+        result
 
     get_change_summary: =>
         'Unknown.'
 
     get_allow_submit: =>
         true
-
-    get_can_set_visible: =>
-        if @showing_only()
-            return false
-        switch @status()
-            when 'disabled', 'changed'
-                return false
-            else
-                true
-
-    showing_only: =>
-        @parent.show_only_section() == this
-
-    get_show_entire: =>
-        not @parent.show_only_section()? or @showing_only()
-
-    toggle_show_only: =>
-        if @parent.show_only_section()?
-            @parent.show_only_section null
-        else
-            @parent.show_only_section this
-        @try_set_visible null
 
 _.mixin dollar_val: (x, precision = 0) ->
     if x?

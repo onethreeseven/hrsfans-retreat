@@ -11,8 +11,6 @@ I wanted to leverage this project as a learning opportunity, so I used many of t
 at [my company](http://www.luminoso.com/). I also used Google App Engine, because I didn't want to
 deal with hosting, and I'd used it before.
 
-Sorry for the complexity.
-
 ### Things you will need
 
   * [Python 2.7](http://python.org/).  App Engine doesn't support Python 3 yet, as far as I know.
@@ -35,7 +33,7 @@ the same directory; adapt as necessary.)
 First, you need to compile the Coffeescript to Javascript. I do this by leaving one terminal in the
 `static/` directory and running Coffeescript in its continuous compilation mode:
 
-    coffee -c --watch .
+    coffee -w -c .
 
 This will watch your Coffeescript files for changes and automatically refresh the associated
 Javascript files. If your Coffeescript file has a syntax error, it will quietly leave the Javascript
@@ -47,17 +45,6 @@ Next, run the SDK's development server:
 
 If all is well, you should be able to browse to a local copy of the registration system at
 `localhost:8080`, and see an administrative interface at `localhost:8000`.
-
-However, you'll notice that the page is broken. That's because there's one file I didn't upload to
-github; it's called secret.coffee and consists purely of
-
-    window.secret =
-        address_1: 'The first line of an address'
-        address_2: 'The second line of an address'
-        address_3: 'The third line of an address'
-
-I did this just so my address doesn't end up in the repo, which feels weird. Create the file, put in
-whatever you want for the address, and you should be in business.
 
 ### Uploading
 

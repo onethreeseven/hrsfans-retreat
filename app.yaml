@@ -6,8 +6,14 @@ threadsafe: true
 
 handlers:
   - url: /admin
-    static_files: static/admin/index.html
-    upload: static/admin/index.html
+    static_files: static/admin.html
+    upload: static/admin.html
+    login: admin
+    secure: always
+
+  - url: /static/admin.js
+    static_files: static/admin.js
+    upload: static/admin.js
     login: admin
     secure: always
 
@@ -17,10 +23,9 @@ handlers:
     login: required
     secure: always
 
-  - url: /admin/(.*\.html)
-    static_files: static/admin/\1
-    upload: static/admin/[^/]*\.html
-    login: admin
+  - url: /static/([^/]*\.(css|js|png))
+    static_files: static/\1
+    upload: static/[^/]*\.(css|js|png)
     secure: always
 
   - url: /([^/]*\.html)
@@ -40,11 +45,6 @@ handlers:
     script: main.application
     secure: always
 
-  - url: /static/([^/]*\.(css|js|png))
-    static_files: static/\1
-    upload: static/[^/]*\.(css|js|png)
-    secure: always
-
   - url: /call/admin/.*
     script: main.application
     login: admin
@@ -59,7 +59,6 @@ skip_files:
   - ^(.*/)?#.*#
   - ^(.*/)?.*~
   - ^(.*/)?.*\.py[co]
-  - ^(.*/)?.*/RCS/.*
   - ^(.*/)?\..*
   - ^(.*/)?.*\.coffee
   - ^(.*/)?.*\.md
