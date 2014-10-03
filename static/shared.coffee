@@ -5,7 +5,7 @@ class PageModel
         $.ajax(url: 'call/init', success: @init_cb, async: false)
 
     init_cb: (data) =>
-        document.title = data.party_name
+        document.title = data.party_data.party_name
         @party_data = data.party_data
         @logout_url = data.logout_url
         @user_nickname = data.user_nickname
@@ -30,7 +30,6 @@ class PageModel
         for email, reg of data.registrations
             if reg.confirmed
                 item =
-                    adjustment: reg.adjustment ? 0.0
                     aid: reg.aid ? 0.0
                     aid_pledge: 0.0
                     credits: []
@@ -39,11 +38,15 @@ class PageModel
                     name: reg.name
                     rooms: 0
                     subsidy: reg.subsidy ? 0.0
+                    night_charges: {}  # This is a bookkeeping variable which will be removed later
                 if reg.aid_pledge? and item.aid > 0.0
                     item.aid_pledge = reg.aid_pledge
                 for meal in @party_data.meals
                     if reg.meals[meal.id] == 'yes'
                         item.meals += meal.cost
+                for night, staying of reg.nights
+                    if staying == 'yes'
+                        item.night_charges[night] = @party_data.independent_rooming_fee
                 result[email] = item
 
         # Pull data from the reservations
@@ -56,6 +59,13 @@ class PageModel
                             email = data.reservations[key].registration
                             if email of result
                                 result[email].rooms += bed.costs[night.id]
+                                result[email].night_charges[night.id] = 0
+
+        # Handle independent night charges
+        for email, item of result
+            for night, charge of item.night_charges
+                item.rooms += charge
+            delete item.night_charges
 
         # Pull data from the credits
         for credit in data.credits
@@ -71,7 +81,7 @@ class PageModel
 
         # Sum it up for convenience
         for email, item of result
-            item.due = item.adjustment + item.aid + item.meals + item.rooms + item.subsidy
+            item.due = item.aid + item.meals + item.rooms + item.subsidy
             for credit in item.credits
                 item.due -= credit.amount
             for expense in item.expenses

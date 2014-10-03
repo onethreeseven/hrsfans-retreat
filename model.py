@@ -11,8 +11,7 @@ from google.appengine.ext import ndb
 
 
 # This initializes some global data
-PARTY_NAME = 'Summer Retreat 2014'
-PARTY_DATA = yaml.load(open('data/%s.yaml' % PARTY_NAME))
+PARTY_DATA = yaml.load(open('data.yaml'))
 NIGHTS = {day['id'] for day in PARTY_DATA['days'][:-1]}
 # This is a map from bed IDs to the night IDs when each bed is available
 AVAILABLE_NIGHTS = {}
@@ -57,7 +56,7 @@ class Party(ndb.Model):
     '''
     # Doesn't actually store anything right now
 
-PARTY_KEY = ndb.Key(Party, PARTY_NAME)
+PARTY_KEY = ndb.Key(Party, '.')
 
 
 class User(ndb.Model):
@@ -227,10 +226,8 @@ class Registration(ndb.Model):
     guest = ndb.TextProperty(required=True, default='')
     medical = ndb.TextProperty(required=True, default='')
     phone = ndb.TextProperty(required=True, default='')
-    transport_choice = ndb.TextProperty(required=True, default='')
 
     # Financial items; we use None here to indicate that the user has not entered anything yet
-    adjustment = ndb.FloatProperty(indexed=False)
     aid = ndb.FloatProperty(indexed=False)
     aid_pledge = ndb.FloatProperty(indexed=False)
     subsidy = ndb.FloatProperty(indexed=False)
@@ -596,7 +593,6 @@ def general_data():
     Data everyone needs.
     '''
     return {
-        'party_name': PARTY_NAME,
         'party_data': PARTY_DATA
     }
 

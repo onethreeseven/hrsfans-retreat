@@ -22,7 +22,6 @@ class AdminPageModel extends PageModel
         @financial = new Financial(this)
         @meals = new Meals(this)
         @personal_info = new PersonalInfo(this)
-        @transportation = new Transportation(this)
         @email_list = new EmailList(this)
         @phone_list = new PhoneList(this)
 
@@ -33,7 +32,6 @@ class AdminPageModel extends PageModel
             @financial,
             @meals,
             @personal_info,
-            @transportation,
             @email_list,
             @phone_list
         ]
@@ -298,7 +296,7 @@ class RecordExpenses extends FormSection
 
         super parent
 
-    label: 'Expenses'
+    label: 'Credits'
 
     # These methods are required by the parent class
     get_status: =>
@@ -530,7 +528,6 @@ class Financial extends FormSection
             aid_minus_count: 0
             aid_minus: 0
             aid: 0
-            adjustment: 0
             expenses: _.sortBy(expenses, 'category')
             total_expenses: total_expenses
             due: 0
@@ -550,7 +547,6 @@ class Financial extends FormSection
             else if item.aid < 0
                 summary.aid_minus_count += 1
                 summary.aid_minus += item.aid
-            summary.adjustment += item.adjustment
             summary.due += item.due
 
         summary.subsidy = summary.subsidy_minus + summary.subsidy_plus
@@ -559,8 +555,7 @@ class Financial extends FormSection
         summary.total_income = summary.meals +
                                summary.rooms +
                                summary.subsidy +
-                               summary.aid +
-                               summary.adjustment
+                               summary.aid
         summary.surplus = summary.total_income - summary.total_expenses
         summary.received = summary.surplus - summary.due
 
@@ -592,33 +587,10 @@ class PersonalInfo extends FormSection
 
         super parent
 
-    label: 'Personal Info'
+    label: 'Other Info'
 
     reset: =>
         @data @parent.name_sorted_regs
-
-
-class Transportation extends FormSection
-    constructor: (parent) ->
-        @data = ko.observable []
-
-        super parent
-
-    label: 'Transportation'
-
-    reset: =>
-        groups = {}
-        for reg in @parent.name_sorted_regs
-            if reg.transport_choice not of groups
-                groups[reg.transport_choice] = []
-            groups[reg.transport_choice].push reg
-
-        data = []
-        for label, group of groups
-            data.push
-                label: label
-                group: group
-        @data _.sortBy(data, 'label')
 
 
 class Meals extends FormSection

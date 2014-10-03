@@ -4,9 +4,9 @@
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
     <link rel='stylesheet' type='text/css' href='static/style.css'>
     <link rel="icon" type="image/png" href="static/favicon.png" />
-    <script type='text/javascript' src='static/knockout-3.1.0.js'></script>
+    <script type='text/javascript' src='static/knockout-3.2.0.js'></script>
     <script type='text/javascript' src='static/underscore-min.js'></script>
-    <script type='text/javascript' src='static/jquery-2.1.0.min.js'></script>
+    <script type='text/javascript' src='static/jquery-2.1.1.min.js'></script>
     <script type='text/javascript' src='static/shared.js'></script>
     <script type='text/javascript' src='static/main.js'></script>
     <title>HRSFANS Retreat Registration</title>
@@ -32,7 +32,7 @@
             <!-- ko foreach: $root.party_data.rooms[$data] -->
                 <!-- ko foreach: beds --><tr>
                     <td
-                        class='cell_label_medium bg_gray'
+                        class='cell_label_wide bg_gray'
                         data-bind='text: $index() ? "" : $parent.room'
                     ></td>
                     <td class='cell_label_short bg_gray' data-bind='text: bed'></td>
@@ -84,7 +84,10 @@
 
             <p>
                 You have access to the following registrations.  To register friends or family, or
-                if you logged in with a non-Google account, add email addresses below.
+                if you logged in with a non-Google account, add email addresses below.  If your
+                child does not have an email address, you can work around this by providing your own
+                under his or her name, in the format
+                &quot;Adam Young&lt;mister_young@gmail.com&gt;&quot;.
             </p>
 
             <div class='authorization-list-container'>
@@ -129,9 +132,6 @@
             <p data-bind="visible: $root.is_admin">
                 You have administrator access, so no confirmation emails will be sent.
             </p>
-            <p class="note">
-                Need to register children without email addresses?  Contact Andrew for a workaround.
-            </p>
 
             <div
                 class='action-area'
@@ -148,36 +148,10 @@
             <div class='message' data-bind='text: message'></div>
 
             <p>
-                This year, we are not charging a fee for small children who do not occupy a
-                reserved bed, nor for people who choose to make their own rooming arrangements.
-                (Children who are not occupying a separate bed do not need their own registrations;
-                just list their names below.)  Please contact us with any questions on this policy.
-            </p>
-            <p>
-                Feel free to leave blank any of the "optional questions" if they do not apply to
-                you.  To clarify the first optional question, we would like additional information
-                about your transportation plans in any of the following cases:
-                <ul>
-                    <li>
-                        You are driving your own car to the party and would be willing to make a few
-                        runs to the train station or other destinations.  We will cover your gas
-                        costs.
-                    </li>
-                    <li>
-                        You are renting a car in Albany and would be willing to drive for the party.
-                        We are looking for a couple of people to drive for five hours each; in
-                        exchange, we'll pay the car rental.
-                    </li>
-                    <li>
-                        You chose "Other" (in which case we'd appreciate an elaboration for
-                        our information), or have any other comments on your transportation
-                        arrangement.
-                    </li>
-                </ul>
-            </p>
-            <p>
-                The remaining questions should be self-explanatory.  Let us know if you need any
-                clarifications.
+                In order to keep accurate records, guests and most children need to be registered.
+                (Children who will neither eat party meals nor take a bed slot are an exception.)
+                You can add people to your registration using the "Add Emails" tab.  We have plans
+                to streamline group registrations in future, but please bear with us for now.
             </p>
 
             <!-- ko foreach: sections --><div class='subsection' data-bind='css: status'>
@@ -265,42 +239,6 @@
                     </tr>
                     <tr class='reg_row'>
                         <td class='borderless reg_label'>
-                            How do you expect to get to the retreat?
-                        </td>
-                        <td class='borderless'>
-                            <select
-                                class='reg_input'
-                                data-bind='value: transport_choice'
-                            >
-                                <option value=''>
-                                    (Please select an option.)
-                                </option>
-                                <option value='Boston: drive'>
-                                    Drive or join a carpool from Boston.
-                                </option>
-                                <option value='NYC: Amtrak'>
-                                    Take Amtrak from NYC to Saratoga Springs.
-                                </option>
-                                <option value='NYC: drive'>
-                                    Drive or join a carpool, if available, from NYC.
-                                </option>
-                                <option value='Fly: NYC'>
-                                    Fly to NYC; take Amtrak or join a carpool, if available.
-                                </option>
-                                <option value='Fly: Albany, rent'>
-                                    Fly to Albany; rent a car.
-                                </option>
-                                <option value='Fly: Albany, cab'>
-                                    Fly to Albany; take a taxi or shuttle.
-                                </option>
-                                <option value='Other'>
-                                    Other.  (We will assume you can get to the party unassisted.)
-                                </option>
-                            </select>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
                             Please provide the name and phone number of an emergency contact.
                         </td>
                         <td class='borderless'>
@@ -313,13 +251,12 @@
                     </tr>
                 </table>
 
-                <h3>Optional Questions</h3>
+                <h3>Additional Information (please leave blank unless applicable)</h3>
                 <table class='reg_table'>
                     <tr class='reg_row'>
                         <td class='borderless reg_label'>
-                            Are you willing to run one or two shuttles for the party?  Are you
-                            interested in being a subsidized party driver?  Do you have any other
-                            information to add about your transportation arrangements?
+                            Are you planning to bring a car to the party, and if so, are you willing
+                            to drive for the party?  (We will reimburse you for driving expenses.)
                         </td>
                         <td class='borderless'>
                             <textarea
@@ -395,61 +332,29 @@
             <div class='message' data-bind='text: message'></div>
 
             <p>
-                This year, we're renting a group of three houses in Corinth, NY.  All three houses
-                are right next to each other, so it will be easy to go back and forth at will.
+                We're returning to our usual house in Ocean Grove, New Jersey, although this year we
+                are not renting a quiet house.  Once again, we are coordinating group reservations
+                at the Quaker Inn, a short walk away.
             </p>
             <p>
                 If you want to claim an entire two-person bed for yourself, you're allowed to do
                 that; select both slots.  You must, of course, pay for both slots.  If you select
                 only one slot, expect the other slot to be taken by somebody else.
             </p>
+            <p>
+                Feel free to make your own rooming arrangements; we will include a charge of $6 per
+                night to cover snacks and house supplies.
+            </p>
 
             <div class="subsection">
-                <h2>The Party House</h2>
-                <p>
-                    The largest chunk of the party, including meals, will be at this house, which
-                    has lots of great public space.  If you decide to stay in this house, expect
-                    wackiness and fun at all hours of the day and night!
-                </p>
-                <p>
-                    Cassia will be the host in the Party House.
-                </p>
-                <div data-bind="template: { name: 'room_group', data: 'party_house' }"></div>
-            </div>
-
-            <div class="subsection">
-                <h2>The Quiet House</h2>
-                <p>
-                    We expect this will be a nice place for mellow tea times and board games, and be
-                    a good place to stay if you have a relatively early bedtime.
-                </p>
-                <p>
-                    Elisabeth will be the host in the Quiet House.
-                </p>
-                <div data-bind="template: { name: 'room_group', data: 'quiet_house' }"></div>
-            </div>
-
-            <div class="subsection">
-                <h2>The Family House</h2>
-                <p>
-                    We expect HRSFAN parents and HRSFAtots to want to stay here, and have the
-                    pleasure of hanging out with the other HRSFA families.
-                </p>
-                <p>
-                    Rose will be the host in the Family House.
-                </p>
-                <div data-bind="template: { name: 'room_group', data: 'family_house' }"></div>
+                <h2>The House</h2>
+                <p>Tom will be co-hosting at the house.</p>
+                <div data-bind="template: { name: 'room_group', data: 'house' }"></div>
             </div>
 
             <div class="subsection">
                 <h2>The Hotel</h2>
-                <p>
-                    For people interested in more privacy, the
-                    <a href="http://www.islandviewmotel.com/">Island View Motel</a> is about a ten
-                    minute drive from the houses.  We are not organizing a group reservation this
-                    year, so if you would rather stay here, please go ahead and make reservations
-                    yourself.
-                </p>
+                <div data-bind="template: { name: 'room_group', data: 'hotel' }"></div>
             </div>
 
             <div
@@ -607,16 +512,6 @@
                     </p>
                 </div>
 
-                <!-- ko if: $root.is_admin --><div class='pmt_subsection'>
-                    <p>
-                        Cost adjustment (administrators only; positive means increased costs):
-                        $<input
-                            class="money"
-                            data-bind='value: adjustment, valueUpdate: "afterkeydown"'
-                        ></input>
-                    </p>
-                </div><!-- /ko -->
-
                 <div class='pmt_subsection'>
                     <p>
                         <input type='checkbox' data-bind='checked: confirmed'></input>
@@ -675,14 +570,6 @@
                             data-bind='text: _.dollar_val(subsidy, 2)'
                         ></td>
                     </tr><!-- /ko -->
-                    <!-- ko if: adjustment != 0 --><tr>
-                        <td class='borderless pmt_group'></td>
-                        <td class='cell_info_wide bg_slate'>Administrative adjustment</td>
-                        <td
-                            class='cell_value bg_slate'
-                            data-bind='text: _.dollar_val(adjustment, 2)'
-                        ></td>
-                    </tr><!-- /ko -->
                     <!-- ko foreach: credits --><tr>
                         <td
                             class='borderless pmt_group'
@@ -700,11 +587,11 @@
                     <!-- ko foreach: expenses --><tr>
                         <td
                             class='borderless pmt_group'
-                            data-bind='text: $index() == 0 ? "Expenses" : ""'
+                            data-bind='text: $index() == 0 ? "Credits" : ""'
                         ></td>
                         <td
                             class='cell_info_wide bg_slate'
-                            data-bind='text: "Expense reported " + date'
+                            data-bind='text: "Credit recorded " + date'
                         ></td>
                         <td
                             class='cell_value bg_slate'
@@ -788,7 +675,7 @@
         <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
             <p>
                 We're still using the
-                <a href="http://www.multivac.hrsfans.org/index.php?title=Summer_Party_2014">wiki</a>
+                <a href="http://multivac.hrsfans.org/index.php?title=Retreat_2015">wiki</a>
                 to organize activities, games, cooking, and cleaning.  Head over there to sign up
                 for these things!
             </p>

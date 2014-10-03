@@ -17,7 +17,7 @@ deal with hosting, and I'd used it before.
   * [PyYAML](http://pyyaml.org/).
   * [Coffeescript](http://coffeescript.org/). This is a somewhat Python-esque language that compiles
     to Javascript while filing off a lot of Javascript's warts.
-  * The App Engine [Python SDK](https://developers.google.com/appengine/downloads).
+  * The App Engine [Python SDK](https://cloud.google.com/appengine/downloads).
  
 You may also need the documentation for the following packages, but don't need to download them.
 

@@ -84,6 +84,11 @@ table {
     max-width: 150px;
 }
 
+.cell_label_wide {
+    width: 200px;
+    max-width: 200px;
+}
+
 .cell_info_medium {
     width: 200px;
     max-width: 200px;

@@ -122,7 +122,7 @@ class Registrations(PostHandler):
     '''
     Creates or modifies registrations.
     '''
-    REQUIRED_FIELDS = 'email name full_name phone nights transport_choice emergency'.split()
+    REQUIRED_FIELDS = 'email name full_name phone nights emergency'.split()
 
     def process(self, user, message):
         for registration in message:
@@ -168,7 +168,7 @@ class Finalize(PostHandler):
     Finalizes registrations.
     '''
     REQUIRED_FIELDS = 'email confirmed aid subsidy'.split()
-    NUMERIC_FIELDS = 'adjustment aid aid_pledge subsidy'.split()
+    NUMERIC_FIELDS = 'aid aid_pledge subsidy'.split()
 
     def process(self, user, message):
         for registration in message:
@@ -178,8 +178,6 @@ class Finalize(PostHandler):
                 return 'Authorization failure.  How did you do that?'
             if not model.PARTY_DATA['reservations_enabled']:
                 return 'Reservations not enabled.  How did you do that?'
-            if 'adjustment' in registration and not users.is_current_user_admin():
-                return 'Only admins can set financial adjustments.  How did you do that?'
             for field in self.NUMERIC_FIELDS:
                 if registration.get(field) is not None:
                     registration[field] = float(registration[field])

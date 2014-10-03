@@ -307,7 +307,6 @@ class Registration
                 ['bg_purple', 'bg_slate', 'bg_green']
             )
 
-        @transport_choice = ko.observable srv_data?.transport_choice
         @emergency = ko.observable srv_data?.emergency
         @driving = ko.observable srv_data?.driving
         @dietary = ko.observable srv_data?.dietary
@@ -335,9 +334,6 @@ class Registration
         if not _.some(cell.value() == 'yes' for id, cell of @nights)
             @message 'Please select at least one night.'
             return true
-        else if not @transport_choice()?.length
-            @message 'Please tell us how you plan to get to the party.'
-            return true
         else if not @emergency()?.length
             @message 'Please provide emergency contact information.'
             return true
@@ -355,8 +351,6 @@ class Registration
         if _.some(cell.changed() for id, cell of @nights)
             return true
         if _.some(cell.changed() for id, cell of @meals)
-            return true
-        if not eq(@transport_choice(), @srv_data?.transport_choice)
             return true
         if not eq(@emergency(), @srv_data?.emergency)
             return true
@@ -396,7 +390,6 @@ class Registration
         phone: @phone() ? ''
         nights: @cell_values @nights
         meals: @cell_values @meals
-        transport_choice: @transport_choice() ? ''
         emergency: @emergency() ? ''
         driving: @driving() ? ''
         dietary: @dietary() ? ''
@@ -636,8 +629,6 @@ class FinalizeSection
         @aid = ko.computed @get_aid
         @subsidy = ko.computed @get_subsidy
 
-        @adjustment = ko.observable srv_data.adjustment
-
         @confirmed = ko.observable srv_data.confirmed
 
         @message = ko.observable ''
@@ -676,8 +667,6 @@ class FinalizeSection
             return true
         if not eq(@aid_pledge(), @srv_data.aid_pledge)
             return true
-        if not eq(@adjustment(), @srv_data.adjustment)
-            return true
         if @confirmed() != @srv_data.confirmed
             return true
         false
@@ -703,15 +692,11 @@ class FinalizeSection
         'good'
 
     submit_message: =>
-        result =
-            email: @email
-            aid: @aid()
-            aid_pledge: @aid_pledge()
-            confirmed: @confirmed()
-            subsidy: @subsidy()
-        if @main_page.is_admin
-            result.adjustment = @adjustment()
-        result
+        email: @email
+        aid: @aid()
+        aid_pledge: @aid_pledge()
+        confirmed: @confirmed()
+        subsidy: @subsidy()
 
 
 # Section 5: displaying payment due

@@ -1,0 +1,463 @@
+# This is a YAML file, the syntax of which should be pretty self-explanatory.  (See the Wikipedia
+# page if you need more help. The thing that gets me most often is missing the '-' before a new
+# entry.)
+
+# In general things are identified to the system only by their id numbers. This means that if you
+# want to change the name of something, or how much it costs, you can do so without causing
+# confusion.  (Changing costs will update all outstanding balances automatically.)
+
+# If you want to add a new entry, it should get a new id number; however, that number need not be
+# consecutive or in order. (The system uses the ordering in this file.)
+
+# If you want to delete an entry, it's probably bad news bears.
+
+party_name: Winter Retreat 2015
+independent_rooming_fee: 6
+reservations_enabled: 1
+
+# Note: the code currently assumes that "nights" should be "days" minus the last day.  If you have
+# some kind of non-continuous party, we'll have to fix this (and I'll be sad).
+days:
+  - id: 1
+    name: Wednesday
+    date: Dec. 31
+  - id: 2
+    name: Thursday
+    date: Jan. 1
+  - id: 3
+    name: Friday
+    date: Jan. 2
+  - id: 4
+    name: Saturday
+    date: Jan. 3
+  - id: 5
+    name: Sunday
+    date: Jan. 4
+
+meals:
+  - id: 1
+    name: Wed dinner
+    cost: 6
+  - id: 2
+    name: Thu brunch
+    cost: 4
+  - id: 3
+    name: Thu dinner
+    cost: 6
+  - id: 4
+    name: Fri brunch
+    cost: 4
+  - id: 5
+    name: Fri dinner
+    cost: 6
+  - id: 6
+    name: Sat brunch
+    cost: 4
+  - id: 7
+    name: Sat dinner
+    cost: 6
+  - id: 8
+    name: Sun brunch
+    cost: 4
+
+# By convention I'm separating the ids for the different houses by 1000, and the ids for different
+# rooms by 10.  This is just to make it harder to accidentally reuse an id.
+
+# To indicate that a room is unavailable for a given night, leave out the corresponding room cost.
+rooms:
+    house:
+      - room: 1. First floor room
+        beds:
+          - id: 1011
+            bed: Twin bed
+            costs:
+                1: 55
+                2: 55
+                3: 55
+                4: 55
+      - room: 2. Second floor room with bath
+        beds:
+          - id: 1021
+            bed: Queen bed
+            costs:
+                1: 50
+                2: 50
+                3: 50
+                4: 50
+          - id: 1022
+            bed: Queen bed
+            costs:
+                1: 50
+                2: 50
+                3: 50
+                4: 50
+      - room: 3. Second floor room
+        beds:
+          - id: 1031
+            bed: Queen bed
+            costs:
+                1: 42
+                2: 42
+                3: 42
+                4: 42
+          - id: 1032
+            bed: Queen bed
+            costs:
+                1: 42
+                2: 42
+                3: 42
+                4: 42
+      - room: 4. Second floor room
+        beds:
+          - id: 1041
+            bed: Twin bed 1
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 1042
+            bed: Twin bed 2
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 5. Third floor room
+        beds:
+          - id: 1051
+            bed: Twin bed
+            costs:
+                1: 55
+                2: 55
+                3: 55
+                4: 55
+      - room: 6. Third floor room
+        beds:
+          - id: 1061
+            bed: Queen bed
+            costs:
+                1: 42
+                2: 42
+                3: 42
+                4: 42
+          - id: 1062
+            bed: Queen bed
+            costs:
+                1: 42
+                2: 42
+                3: 42
+                4: 42
+      - room: 7. Third floor room
+        beds:
+          - id: 1071
+            bed: Twin bed 1
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 1072
+            bed: Twin bed 2
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 1073
+            bed: Air mattress
+            costs:
+                1: 15
+                2: 15
+                3: 15
+                4: 15
+      - room: 8. Third floor room
+        beds:
+          - id: 1081
+            bed: Queen bed
+            costs:
+                1: 42
+                2: 42
+                3: 42
+                4: 42
+          - id: 1082
+            bed: Queen bed
+            costs:
+                1: 42
+                2: 42
+                3: 42
+                4: 42
+    hotel:
+      - room: 1. Room
+        beds:
+          - id: 2011
+            bed: Twin bed 1
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2012
+            bed: Twin bed 2
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 2. Room
+        beds:
+          - id: 2021
+            bed: Twin bed 1
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2022
+            bed: Twin bed 2
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 3. Room
+        beds:
+          - id: 2031
+            bed: Twin bed 1
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2032
+            bed: Twin bed 2
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 4. Room
+        beds:
+          - id: 2041
+            bed: Twin bed 1
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2042
+            bed: Twin bed 2
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 5. Room
+        beds:
+          - id: 2051
+            bed: Twin bed 1
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2052
+            bed: Twin bed 2
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 6. Room with shared bath
+        beds:
+          - id: 2061
+            bed: Twin bed 1
+            costs:
+                1: 30
+                2: 30
+                3: 30
+                4: 30
+          - id: 2062
+            bed: Twin bed 2
+            costs:
+                1: 30
+                2: 30
+                3: 30
+                4: 30
+      - room: 7. Room with shared bath
+        beds:
+          - id: 2071
+            bed: Twin bed 1
+            costs:
+                1: 30
+                2: 30
+                3: 30
+                4: 30
+          - id: 2072
+            bed: Twin bed 2
+            costs:
+                1: 30
+                2: 30
+                3: 30
+                4: 30
+      - room: 8. Room
+        beds:
+          - id: 2081
+            bed: Double bed
+            costs:
+                1: 38
+                2: 38
+                3: 38
+                4: 38
+          - id: 2082
+            bed: Double bed
+            costs:
+                1: 38
+                2: 38
+                3: 38
+                4: 38
+      - room: 9. Room
+        beds:
+          - id: 2091
+            bed: Double bed
+            costs:
+                1: 38
+                2: 38
+                3: 38
+                4: 38
+          - id: 2092
+            bed: Double bed
+            costs:
+                1: 38
+                2: 38
+                3: 38
+                4: 38
+      - room: 10. Room
+        beds:
+          - id: 2101
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2102
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 11. Room
+        beds:
+          - id: 2111
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2112
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 12. Room
+        beds:
+          - id: 2121
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2122
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 13. Room
+        beds:
+          - id: 2131
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2132
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 14. Room
+        beds:
+          - id: 2141
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2142
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 15. Room
+        beds:
+          - id: 2151
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2152
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 16. Room
+        beds:
+          - id: 2161
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2162
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+      - room: 17. Room
+        beds:
+          - id: 2171
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+          - id: 2172
+            bed: Queen bed
+            costs:
+                1: 40
+                2: 40
+                3: 40
+                4: 40
+

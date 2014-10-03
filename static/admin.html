@@ -4,9 +4,9 @@
     <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
     <link rel='stylesheet' type='text/css' href='static/style.css'>
     <link rel="icon" type="image/png" href="static/favicon.png" />
-    <script type='text/javascript' src='static/knockout-3.1.0.js'></script>
+    <script type='text/javascript' src='static/knockout-3.2.0.js'></script>
     <script type='text/javascript' src='static/underscore-min.js'></script>
-    <script type='text/javascript' src='static/jquery-2.1.0.min.js'></script>
+    <script type='text/javascript' src='static/jquery-2.1.1.min.js'></script>
     <script type='text/javascript' src='static/shared.js'></script>
     <script type='text/javascript' src='static/admin.js'></script>
     <title>HRSFANS Retreat Registration</title>
@@ -105,7 +105,7 @@
                 Net received: <b><span data-bind='text: total_received'></span></b>
             </p>
             <p class='note'>
-                Click a payment to edit it.  Entries in red have not been fully credited.
+                Click an entry to edit it.  Entries in red have not been fully credited.
             </p>
             <table class='payment_records'><tbody data-bind='foreach: payments'>
                 <tr class='pointer' data-bind='css: status, click: do_click'>
@@ -122,14 +122,14 @@
         <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
             <div class='message' data-bind='text: message'></div>
 
-            <h2>Add or Edit Expense</h2>
+            <h2>Add or Edit Credit</h2>
             <div class="payment_editor">
                 <!-- ko if: edit_expense --><p class='color_red'>
-                    Editing selected expense:
+                    Editing selected credit:
                 </p><!-- /ko -->
-                <!-- ko if: !edit_expense() --><p>Recording new expense:</p><!-- /ko -->
+                <!-- ko if: !edit_expense() --><p>Recording new credit:</p><!-- /ko -->
                 <p>
-                    <div class="payment_left">Expense of</div>
+                    <div class="payment_left">Amount of</div>
                     $<input
                         class='money'
                         data-bind='value: edit_amount, valueUpdate: "afterkeydown"'
@@ -163,13 +163,16 @@
                             data-bind='value: category'
                         >
                             <option value=''>(Please select an option.)</option>
-                            <option value='Deposits'>Deposits</option>
-                            <option value='Houses / Hotels'>Houses / Hotels</option>
-                            <option value='Events'>Events</option>
-                            <option value='Meals'>Meals</option>
-                            <option value='Snacks'>Snacks</option>
-                            <option value='Supplies'>Supplies</option>
-                            <option value='Other'>Other</option>
+                            <option value='Expense: Deposits'>Expense: Deposits</option>
+                            <option value='Expense: Houses / Hotels'>Expense: Houses / Hotels</option>
+                            <option value='Expense: Meals'>Expense: Meals</option>
+                            <option value='Expense: Snacks'>Expense: Snacks</option>
+                            <option value='Expense: Supplies'>Expense: Supplies</option>
+                            <option value='Expense: Other'>Expense: Other</option>
+                            <option value='Adjustment: Meals'>Adjustment: Meals</option>
+                            <option value='Adjustment: Rooms'>Adjustment: Rooms</option>
+                            <option value='Adjustment: Other'>Adjustment: Other</option>
+                            <option value='Donations: General'>Donations: General</option>
                         </select>
                     </p>
                 <!-- /ko -->
@@ -193,10 +196,10 @@
 
             <h2>Previously Recorded</h2>
             <p>
-                Total expenses: <b><span data-bind='text: total_expenses'></span></b>
+                Total credits: <b><span data-bind='text: total_expenses'></span></b>
             </p>
             <p class='note'>
-                Click an expense to edit it.
+                Click an entry to edit it.
             </p>
             <table class='payment_records'><tbody data-bind='foreach: expenses'>
                 <tr class='pointer' data-bind='css: status, click: do_click'>
@@ -337,14 +340,6 @@
                 </tr>
                 <tr>
                     <td class='borderless pmt_group'></td>
-                    <td class='cell_info_wide bg_slate' colspan='2'>Adjustments (net)</td>
-                    <td
-                        class='cell_value bg_slate'
-                        data-bind='text: _.dollar_val(adjustment, 2)'
-                    ></td>
-                </tr>
-                <tr>
-                    <td class='borderless pmt_group'></td>
                     <td class='cell_info_wide bg_gray' colspan='2'>Total</td>
                     <td
                         class='cell_value bg_gray'
@@ -356,7 +351,7 @@
                         <tr>
                             <td
                                 class='borderless pmt_group'
-                                data-bind='text: $index() == 0 ? "Expenses" : ""'
+                                data-bind='text: $index() == 0 ? "Outlays" : ""'
                             ></td>
                             <td
                                 class='cell_info_wide bg_slate'
@@ -417,7 +412,6 @@
                     <th>Subsidy</th>
                     <th>Aid</th>
                     <th>Pledge</th>
-                    <th>Adjustments</th>
                 </tr>
                 <tbody data-bind='foreach: table'>
                     <tr>
@@ -447,10 +441,6 @@
                         <td
                             class="cell_value bg_slate"
                             data-bind='text: $parent.format_val(aid_pledge)'
-                        ></td>
-                        <td
-                            class="cell_value bg_slate"
-                            data-bind='text: $parent.format_val(adjustment)'
                         ></td>
                     </tr>
                 </tbody>
@@ -542,6 +532,9 @@
                 <p class="personal_item">
                     <b>Emergency contact:</b> <span data-bind="text: emergency"></span>
                 </p>
+                <p class="personal_item" data-bind="if: driving">
+                    <b>Driving:</b> <span data-bind="text: driving"></span>
+                </p>
                 <p class="personal_item" data-bind="if: medical">
                     <b>Medical information:</b> <span data-bind="text: medical"></span>
                 </p>
@@ -551,39 +544,6 @@
                 <p class="personal_item" data-bind="if: guest">
                     <b>Guest of:</b> <span data-bind="text: guest"></span>
                 </p>
-            </div>
-        </div>
-    <!-- /ko -->
-
-    <!-- ko with: transportation -->
-        <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-            <div data-bind="foreach: data">
-                <h2>
-                    <span data-bind="text: label"></span>
-                </h2>
-                <table class="admin_reg_table">
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Comments</th>
-                    </tr>
-                    <!-- ko foreach: group -->
-                        <tr>
-                            <td
-                                class='cell_name bg_gray'
-                                data-bind='text: name'
-                            ></td>
-                            <td
-                                class='cell_info_wide bg_gray'
-                                data-bind='text: email'
-                            ></td>
-                            <td
-                                class='cell_info_xwide bg_gray'
-                                data-bind='text: driving, attr: { title: driving }'
-                            ></td>
-                        </tr>
-                    <!-- /ko -->
-                </table>
             </div>
         </div>
     <!-- /ko -->
