@@ -7,712 +7,1081 @@
     <script type='text/javascript' src='static/knockout-3.2.0.js'></script>
     <script type='text/javascript' src='static/underscore-min.js'></script>
     <script type='text/javascript' src='static/jquery-2.1.1.min.js'></script>
-    <script type='text/javascript' src='static/shared.js'></script>
     <script type='text/javascript' src='static/main.js'></script>
-    <title>HRSFANS Retreat Registration</title>
+    <title>Summer Retreat 2015</title>
 </head>
 
 <body>
-
     <script type='text/html' id='action-area'>
-        <button class='bg_red pointer' data-bind='click: reset'>Reset</button>
+        <!-- ko if: status() == "changed" -->
+        <button class='bg_red pointer' data-bind='click: reset'>
+            Reset
+        </button>
+
+        <!-- ko if: !(_.isUndefined($data.submit)) -->
         <button class='save-button' data-bind='click: submit, visible: allow_submit'>Save</button>
-        <span class='note' data-bind='text: change_summary'></span>
+        <!-- /ko -->
+        <!-- /ko -->
+
+        <!-- ko if: !(_.isUndefined($data.del)) -->
+        <button class='delete-button' data-bind='click: del, visible: allow_del'>
+            Delete
+        </button>
+        <!-- /ko -->
+
+        <span class='message' data-bind='text: message'></span>
+    </script>
+
+    <script type='text/html' id='name-and-email'>
+        <h2>
+            <span data-bind='text: name'></span>
+            <!-- ko if: email -->&lt;<span data-bind='text: email'></span>&gt;<!-- /ko -->
+        </h2>
     </script>
 
     <script type='text/html' id='room_group'>
-        <table class='res_table'>
+        <table class='res_table'><tbody>
             <tr>
                 <td class='borderless'></td>
                 <td class='borderless'></td>
                 <!-- ko foreach: $root.nights -->
-                    <td class='bg_gray' colspan='2' data-bind='text: name'></td>
+                <td class='bg_gray' colspan='2' data-bind='text: name'></td>
                 <!-- /ko -->
             </tr>
             <!-- ko foreach: $root.party_data.rooms[$data] -->
-                <!-- ko foreach: beds --><tr>
-                    <td
-                        class='cell_label_wide bg_gray'
-                        data-bind='text: $index() ? "" : $parent.room'
-                    ></td>
-                    <td class='cell_label_short bg_gray' data-bind='text: bed'></td>
-                    <!-- ko foreach: $root.nights -->
-                        <!-- ko with: $parents[3].cells[id + '|' + $parent.id] -->
-                            <td
-                                class='cell_name_short'
-                                data-bind='text: label, click: toggle, css: style'
-                            ></td>
-                            <td
-                                class='cell_cost bg_gray'
-                                data-bind='text: _.dollar_val($parents[1].costs[$parent.id])'
-                            ></td>
-                        <!-- /ko -->
-                    <!-- /ko -->
-                </tr><!-- /ko -->
+            <!-- ko foreach: beds -->
+            <tr>
+                <td class='cell_label_wide bg_gray' data-bind='text: $index() ? "" : $parent.room'>
+                </td>
+                <td class='cell_label_short bg_gray' data-bind='text: bed'></td>
+                <!-- ko foreach: $root.nights -->
+                <!-- ko with: $parents[3].cells[id + '|' + $parent.id] -->
+                <td class='cell_name_short' data-bind='text: value, click: toggle, css: style'></td>
+                <td
+                    class='cell_cost bg_gray'
+                    data-bind='text: _.dollars($parents[1].costs[$parent.id], 0)'
+                ></td>
+                <!-- /ko -->
+                <!-- /ko -->
+            </tr>
             <!-- /ko -->
-        </table>
+            <!-- /ko -->
+        </tbody></table>
     </script>
 
-    <!-- ko if: loaded -->
-
     <div class='header_section header'>
+        <!-- ko if: !is_admin -->
         <p>
             This registration page is for the use of current and former members of HRSFA and members
             of HRSFANS.
         </p>
-        <p class='note'>Logged in as: <span data-bind='text: user_nickname'></span></p>
-        <p class='logout'>
-            <a class="pointer" data-bind='click: refresh_state'>Refresh now</a> |
-            <a data-bind='attr: { href: logout_url }'>Log out</a>
+        <!-- /ko -->
+        <!-- ko if: is_admin -->
+        <p>
+            View group: <select data-bind="options: all_groups, value: selected_group"></select>
         </p>
+        <!-- /ko -->
+        <p class='note'>
+            Logged in as: <span data-bind='text: username'></span>
+        </p>
+        <p class='logout'><a data-bind='attr: { href: logout_url }'>Log out of Google</a></p>
     </div>
 
     <div class='selector_section'>
         <!-- ko foreach: sections -->
-            <div class='section_selector_container'>
-                <div
-                    class='section_selector'
-                    data-bind='text: label, css: status_for_selector, click: try_set_visible'
-                ></div>
-            </div>
+        <div class='section_selector_container'>
+            <div
+                class='section_selector'
+                data-bind='text: label, css: status_for_selector, click: try_set_visible'
+            ></div>
+        </div>
         <!-- /ko -->
     </div>
 
-    <!-- ko with: select_attendees -->
-        <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-            <div class='message' data-bind='text: message'></div>
-
-            <p>
-                You have access to the following registrations.  To register friends or family, or
-                if you logged in with a non-Google account, add email addresses below.  If your
-                child does not have an email address, you can work around this by providing your own
-                under his or her name, in the format
-                &quot;Adam Young&lt;mister_young@gmail.com&gt;&quot;.
-            </p>
-
-            <div class='authorization-list-container'>
-                <table class='authorization-list'>
-                    <tr>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                    <!-- ko foreach: authorizations --><tr>
-                        <td class='borderless cell_info_wide' data-bind='text: email'></td>
-                        <td
-                            class='borderless cell_info_medium'
-                            data-bind='
-                                text: status,
-                                css: { color_red: status != "Active" }
-                            '
-                        ></td>
-                        <td class='borderless'>
-                            <a class="pointer" data-bind='click: $parent.remove_authorization'>
-                                Remove
-                            </a>
-                        </td>
-                    </tr><!-- /ko -->
-                    <tr>
-                        <td class='borderless cell_info_wide'>
-                            <input class='auth_input' data-bind='value: pending_email'></input>
-                        </td>
-                        <td class='borderless cell_info_medium'></td>
-                        <td class='borderless'>
-                            <a class="pointer" data-bind='click: add_authorization'>Add</a>
-                        </td>
-                    </tr>
-                </table>
-            </div>
-
-            <p data-bind="visible: !$root.is_admin">
-                A confirmation link will be emailed to any addresses you add.  Note that if
-                confirmed, you will gain access to any existing registrations for those addresses,
-                including potentially private information.
-            </p>
-            <p data-bind="visible: $root.is_admin">
-                You have administrator access, so no confirmation emails will be sent.
-            </p>
-
+    <!-- ko if: is_admin -->
+    <div class='selector_section'>
+        <!-- ko foreach: admin_sections -->
+        <div class='section_selector_container'>
             <div
-                class='action-area'
-                data-bind="
-                    template: { name: 'action-area', data: $data },
-                    visible: status() == 'changed'
-                "
+                class='section_selector'
+                data-bind='text: label, css: status_for_selector, click: try_set_visible'
             ></div>
         </div>
+        <!-- /ko -->
+    </div>
     <!-- /ko -->
 
-    <!-- ko with: register_attendees -->
-        <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-            <div class='message' data-bind='text: message'></div>
+    <!-- ko with: register -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <p>
+            In order to keep accurate records, all guests and children who will stay in party
+            housing or eat meals must be registered.  (You can come back to this tab to add
+            registrations after you save each one.)
+        </p>
 
-            <p>
-                In order to keep accurate records, guests and most children need to be registered.
-                (Children who will neither eat party meals nor take a bed slot are an exception.)
-                You can add people to your registration using the "Add Emails" tab.  We have plans
-                to streamline group registrations in future, but please bear with us for now.
-            </p>
+        <!-- ko foreach: sections -->
+        <div class='subsection' data-bind='css: status_for_selector, click: try_set_visible'>
+            <div data-bind="template: { name: 'name-and-email', data: server_reg }"></div>
 
-            <!-- ko foreach: sections --><div class='subsection' data-bind='css: status'>
-                <div class='message' data-bind='text: message'></div>
-                <h2 data-bind='text: email'></h2>
-                <table class='reg_table'>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            Name for display (please keep it short!)
-                        </td>
-                        <td class='borderless'>
-                            <input
-                                class='reg_input'
-                                data-bind='value: name, valueUpdate: "afterkeydown"'
-                            ></input>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>Full name</td>
-                        <td class='borderless'>
-                            <input
-                                class='reg_input'
-                                data-bind='value: full_name, valueUpdate: "afterkeydown"'
-                            ></input>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>Phone number</td>
-                        <td class='borderless'>
-                            <input
-                                class='reg_input'
-                                data-bind='value: phone, valueUpdate: "afterkeydown"'
-                            ></input>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            What <b>nights</b> are you staying at the party?<br>
-                        </td>
-                        <td class='borderless'>
-                            <table class='reg_subtable' data-bind='foreach: $root.nights'>
-                                <tr>
-                                    <td
-                                        class='cell_label_medium_plus_cost bg_gray'
-                                        data-bind='text: name + ", " + date'
-                                    ></td>
-                                    <!-- ko with: $parent.nights[id] -->
-                                        <td
-                                            class='reg_option pointer'
-                                            data-bind='text: label, click: toggle, css: style'
-                                        ></td>
-                                    <!-- /ko -->
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            Which meals do you plan to eat?  Selecting "yes" will include the cost
-                            of the meal in your registration; for everyone's convenience, please do
-                            if applicable.  Otherwise, please choose between "no" and "maybe" to
-                            help us estimate the number of people eating each meal.
-                            <br>
-                        </td>
-                        <td class='borderless'>
-                            <table class='reg_subtable' data-bind='foreach: $root.party_data.meals'>
-                                <tr>
-                                    <td
-                                        class='cell_label_medium bg_gray'
-                                        data-bind='text: name'
-                                    ></td>
-                                    <td
-                                        class='cell_cost bg_gray'
-                                        data-bind='text: _.dollar_val(cost)'
-                                    ></td>
-                                    <!-- ko with: $parent.meals[id] -->
-                                        <td
-                                            class='reg_option pointer'
-                                            data-bind='text: label, click: toggle, css: style'
-                                        ></td>
-                                    <!-- /ko -->
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            Please provide the name and phone number of an emergency contact.
-                        </td>
-                        <td class='borderless'>
-                            <textarea
-                                class='reg_input'
-                                data-bind='value: emergency, valueUpdate: "afterkeydown"'
-                                style='height: 60px;'
-                            ></textarea>
-                        </td>
-                    </tr>
-                </table>
+            <!-- ko if: $parent.visible_section() == $data -->
+            <table class='reg_table'><tbody>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>Full name</td>
+                    <td class='borderless'>
+                        <input
+                            class='reg_input'
+                            data-bind='value: full_name, valueUpdate: "afterkeydown"'
+                        ></input>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>Phone number</td>
+                    <td class='borderless'>
+                        <input
+                            class='reg_input'
+                            data-bind='value: phone, valueUpdate: "afterkeydown"'
+                        ></input>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        I am staying the following nights:
+                    </td>
+                    <td class='borderless'>
+                        <table class='reg_subtable'><tbody>
+                            <!-- ko foreach: $root.nights -->
+                            <tr class='bg_gray'>
+                                <td
+                                    class='cell_label_medium_plus_cost'
+                                    data-bind='text: name + ", " + date'
+                                ></td>
+                                <td>
+                                    <input type='checkbox' data-bind='checked: $parent.nights[id]'>
+                                    </input>
+                                </td>
+                            </tr>
+                            <!-- /ko -->
+                        </tbody></table>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        I plan to eat the following meals: <br><br>(If you're not sure, please
+                        consider contributing to the meal fund anyway; we'll put your contribution
+                        to good use!  Otherwise, you can pay cash on site, as always.)
+                    </td>
+                    <td class='borderless'>
+                        <table class='reg_subtable'><tbody>
+                            <!-- ko foreach: $root.party_data.meals -->
+                            <tr class='bg_gray'>
+                                <td class='cell_label_medium' data-bind='text: name'></td>
+                                <td class='cell_cost' data-bind='text: _.dollars(cost, 0)'></td>
+                                <td>
+                                    <input type='checkbox' data-bind='checked: $parent.meals[id]'>
+                                    </input>
+                                </td>
+                            </tr>
+                            <!-- /ko -->
+                        </tbody></table>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        In case of emergency, please contact (name and phone number):
+                    </td>
+                    <td class='borderless'>
+                        <input
+                            class='reg_input'
+                            data-bind='value: emergency, valueUpdate: "afterkeydown"'
+                        ></input>
+                    </td>
+                </tr>
+            </tbody></table>
 
-                <h3>Additional Information (please leave blank unless applicable)</h3>
-                <table class='reg_table'>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            Are you planning to bring a car to the party, and if so, are you willing
-                            to drive for the party?  (We will reimburse you for driving expenses.)
-                        </td>
-                        <td class='borderless'>
-                            <textarea
-                                class='reg_input'
-                                data-bind='value: driving, valueUpdate: "afterkeydown"'
-                                style='height: 60px;'
-                            ></textarea>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            Please list any dietary restrictions we should be aware of.
-                        </td>
-                        <td class='borderless'>
-                            <textarea
-                                class='reg_input'
-                                data-bind='value: dietary, valueUpdate: "afterkeydown"'
-                                style='height: 60px;'
-                            ></textarea>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            Please list any medical information we should be aware of.
-                        </td>
-                        <td class='borderless'>
-                            <textarea
-                                class='reg_input'
-                                data-bind='value: medical, valueUpdate: "afterkeydown"'
-                                style='height: 60px;'
-                            ></textarea>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            If you plan to bring children who will not occupy a reserved bed, please
-                            list their names and ages.
-                        </td>
-                        <td class='borderless'>
-                            <textarea
-                                class='reg_input'
-                                data-bind='value: children, valueUpdate: "afterkeydown"'
-                                style='height: 60px;'
-                            ></textarea>
-                        </td>
-                    </tr>
-                    <tr class='reg_row'>
-                        <td class='borderless reg_label'>
-                            If you are attending as a guest of a HRSFA or HRSFANS member, who is it?
-                        </td>
-                        <td class='borderless'>
-                            <input
-                                class='reg_input'
-                                data-bind='value: guest, valueUpdate: "afterkeydown"'
-                            ></input>
-                        </td>
-                    </tr>
-                </table>
-            </div><!-- /ko -->
+            <h3>Additional Information</h3>
+            <table class='reg_table'><tbody>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        <input type='checkbox' data-bind='checked: dietary.checkbox'></input>
+                        I have dietary restrictions:
+                    </td>
+                    <td class='borderless'>
+                        <textarea
+                            class='reg_input'
+                            data-bind='
+                                value: dietary.text,
+                                valueUpdate: "afterkeydown",
+                                visible: dietary.checkbox
+                            '
+                        ></textarea>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        <input type='checkbox' data-bind='checked: medical.checkbox'></input>
+                        I have medical information the party organizers should be aware of:
+                    </td>
+                    <td class='borderless'>
+                        <textarea
+                            class='reg_input'
+                            data-bind='
+                                value: medical.text,
+                                valueUpdate: "afterkeydown",
+                                visible: medical.checkbox
+                            '
+                        ></textarea>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        <input type='checkbox' data-bind='checked: children.checkbox'></input>
+                        I plan to bring young children who are not separately registered:
+                    </td>
+                    <td class='borderless'>
+                        <textarea
+                            class='reg_input'
+                            data-bind='
+                                value: children.text,
+                                valueUpdate: "afterkeydown",
+                                visible: children.checkbox
+                            '
+                        ></textarea>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        <input type='checkbox' data-bind='checked: guest.checkbox'></input>
+                        I am the guest of a HRSFANS member:
+                    </td>
+                    <td class='borderless'>
+                        <input
+                            class='reg_input'
+                            data-bind='
+                                value: guest.text,
+                                valueUpdate: "afterkeydown",
+                                visible: guest.checkbox
+                            '
+                        ></input>
+                    </td>
+                </tr>
+            </tbody></table>
 
             <div
                 class='action-area'
-                data-bind="
-                    template: { name: 'action-area', data: $data },
-                    visible: status() == 'changed'
-                "
+                data-bind="template: { name: 'action-area', data: $data }"
             ></div>
+            <!-- /ko -->
         </div>
+        <!-- /ko -->
+
+        <!-- ko with: add_registration -->
+        <div class='subsection' data-bind='css: status_for_selector, click: try_set_visible'>
+            <h2>New Registration</h2>
+
+            <!-- ko if: $parent.visible_section() == $data -->
+            <p>
+                To allow a group member to view and edit your group's registrations, submit their
+                Google account email address.
+            </p>
+
+            <table class='reg_table'><tbody>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        Short name for display (e.g., Jean-Luc P.)
+                    </td>
+                    <td class='borderless'>
+                        <input
+                            class='reg_input'
+                            data-bind='value: name, valueUpdate: "afterkeydown"'
+                        ></input>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>Email (optional but recommended)</td>
+                    <td class='borderless'>
+                        <input
+                            class='reg_input'
+                            data-bind='value: email, valueUpdate: "afterkeydown"'
+                        ></input>
+                    </td>
+                </tr>
+            </tbody></table>
+
+            <div
+                class='action-area'
+                data-bind="template: { name: 'action-area', data: $data }"
+            ></div>
+            <!-- /ko -->
+        </div>
+        <!-- /ko -->
+
+    </div>
     <!-- /ko -->
 
-    <!-- ko with: reserve_rooms -->
-        <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-            <div class='message' data-bind='text: message'></div>
+    <!-- ko with: reservations -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <p>
+            We're returning to the group of three houses in Corinth, NY that we rented last year.
+            All three houses are right next to each other.
+        </p>
+        <p>
+            If you want to claim an entire two-person bed for yourself, you're allowed to do
+            that; select both slots.  You must, of course, pay for both slots.  If you select
+            only one slot, expect the other slot to be taken by somebody else.
+        </p>
+        <p>
+            Feel free to make your own rooming arrangements; we will include a charge of
+            <span data-bind='text: _.dollars($root.party_data.independent_room_fee, 0)'></span>
+            per night to cover snacks and house supplies.
+        </p>
 
+        <div class="subsection">
+            <h2>The Party House</h2>
             <p>
-                We're returning to our usual house in Ocean Grove, New Jersey, although this year we
-                are not renting a quiet house.  Once again, we are coordinating group reservations
-                at the Quaker Inn, a short walk away.
+                The largest chunk of the party, including meals, will be at this house, which has
+                lots of great public space.  If you decide to stay in this house, expect wackiness
+                and fun at all hours of the day and night!
             </p>
             <p>
-                If you want to claim an entire two-person bed for yourself, you're allowed to do
-                that; select both slots.  You must, of course, pay for both slots.  If you select
-                only one slot, expect the other slot to be taken by somebody else.
+                Cassia will be the host in the Party House.
             </p>
-            <p>
-                Feel free to make your own rooming arrangements; we will include a charge of $6 per
-                night to cover snacks and house supplies.
-            </p>
-
-            <div class="subsection">
-                <h2>The House</h2>
-                <p>Tom will be co-hosting at the house.</p>
-                <div data-bind="template: { name: 'room_group', data: 'house' }"></div>
-            </div>
-
-            <div class="subsection">
-                <h2>The Hotel</h2>
-                <div data-bind="template: { name: 'room_group', data: 'hotel' }"></div>
-            </div>
-
-            <div
-                class='action-area'
-                data-bind="
-                    template: { name: 'action-area', data: $data },
-                    visible: status() == 'changed'
-                "
-            ></div>
+            <div data-bind="template: { name: 'room_group', data: 'party_house' }"></div>
         </div>
+
+        <div class="subsection">
+            <h2>The Quiet House</h2>
+            <p>
+                We expect this will be a nice place for mellow tea times and board games, and be a
+                good place to stay if you have a relatively early bedtime.
+            </p>
+            <p>
+                Elisabeth will be the host in the Quiet House.
+            </p>
+            <div data-bind="template: { name: 'room_group', data: 'quiet_house' }"></div>
+        </div>
+
+        <div class="subsection">
+            <h2>The Family House</h2>
+            <p>
+                We expect HRSFAN parents and HRSFAtots to want to stay here, and have the pleasure
+                of hanging out with the other HRSFA families.
+            </p>
+            <p>
+                Rose will be the host in the Family House.
+            </p>
+            <div data-bind="template: { name: 'room_group', data: 'family_house' }"></div>
+        </div>
+
+        <div class="subsection">
+            <h2>The Hotel</h2>
+            <p>
+                For people interested in more privacy, the
+                <a href="http://www.islandviewmotel.com/" target="_blank">Island View Motel</a> is
+                about a ten minute drive from the houses.  We are not organizing a group reservation
+                this year, so if you would rather stay here, please go ahead and make reservations
+                yourself.
+            </p>
+        </div>
+
+
+
+        <div
+            class='action-area'
+            data-bind="template: { name: 'action-area', data: $data }"
+        ></div>
+    </div>
     <!-- /ko -->
 
-    <!-- ko with: finalize -->
-        <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-            <div class='message' data-bind='text: message'></div>
+    <!-- ko with: confirmation -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <p>
+            Please let us know if you would like to participate in the transportation subsidy or
+            financial assistance programs.  See
+            <a href="http://www.multivac.hrsfans.org/index.php?title=Summer_Party_2015#Transport_Subsidy_and_Financial_Assistance" target="_blank">
+            the wiki</a> for more.  All contributors and recipients are confidential.
+        </p>
 
-            <p>
-                Please let us know if you would like to participate in the transportation subsidy or
-                financial assistance programs.  See
-                <a href="http://www.multivac.hrsfans.org/index.php?title=Retreat_2014#Transport_Subsidy_and_Financial_Assistance">
-                the wiki</a> for more.  All contributors and recipients are confidential.
-            </p>
+        <p>
+            Then, please confirm your registration, indicating that:
+            <ul>
+                <li>
+                    You agree to pay for your registration in a timely fashion.  If you are
+                    requesting financial aid, or need to delay payment for any reason, contact us
+                    <b>before</b> confirming your registration.
+                </li>
+                <li>
+                    If you are attending as a guest, and especially if you are bringing a guest, you
+                    agree to the provisions of the
+                    <a href="http://www.multivac.hrsfans.org/index.php?title=Guest_policy" target="_blank">
+                    guest policy</a>.
+                </li>
+                <li>
+                    You agree to the provisions of the HRSFANS
+                    <a href="https://docs.google.com/document/d/1cqa1G9eDkL-pEav8EqqmY5K2R3dVBbyocSNn-JCwQG4" target="_blank">
+                    policy on harassment</a>.
+                </li>
+            </ul>
+        </p>
 
-            <p>
-                Finally, please confirm your registration.  By confirming your registration, you
-                indicate that:
-                <ul>
-                    <li>
-                        You agree to pay for your registration in a timely fashion.  If you are
-                        requesting financial aid, or need to delay payment for any reason,
-                        <a href="http://www.multivac.hrsfans.org/index.php?title=Summer_Party_2014#Contact_the_Summer_Party_Team">
-                        contact us</a> <b>before</b> confirming your registration.
-                    </li>
-                    <li>
-                        If you are attending as a guest, and especially if you are bringing a guest,
-                        you agree to the provisions of the
-                        <a href="http://www.multivac.hrsfans.org/index.php?title=Guest_policy">
-                        guest policy</a>.
-                    </li>
-                    <li>
-                        You agree to the provisions of the HRSFANS
-                        <a href="https://docs.google.com/document/d/1cqa1G9eDkL-pEav8EqqmY5K2R3dVBbyocSNn-JCwQG4">
-                        policy on harassment</a>.
-                    </li>
-                </ul>
-                Do not confirm a registration on behalf of another person unless you have confirmed
-                that that person has also read these provisions.
-            </p>
+        <!-- ko foreach: sections -->
+        <div class='subsection'  data-bind='css: status_for_selector, click: try_set_visible'>
+            <div data-bind="template: { name: 'name-and-email', data: server_reg }"></div>
 
-            <!-- ko foreach: sections --><div class='subsection' data-bind='css: status'>
-                <h2 data-bind='text: email'></h2>
-                <div class='message' data-bind='text: message'></div>
-                <div class='pmt_subsection'>
-                    <p>
-                        <input
-                            type='radio'
-                            value='requesting'
-                            data-bind='checked: subsidy_choice, attr: { name: "travel" + $index() }'
-                        ></input>
-                        I anticipate significant transportation expenses (such as a long-distance
-                        flight) and would like to request a transportation subsidy of
-                        $<input
-                            class='money'
-                            data-bind='
-                                enable: subsidy_choice() == "requesting",
-                                value: subsidy_value,
-                                valueUpdate: "afterkeydown"
-                            '
-                        </input>.
-                        At this time we are accepting requests of $100; if there are enough
-                        contributions, we will ask how much your travel expenses were and increase
-                        subsidies appropriately.
-                    </p>
-                    <p>
-                        <input
-                            type='radio'
-                            value='contributing'
-                            data-bind='checked: subsidy_choice, attr: { name: "travel" + $index() }'
-                        ></input>
-                        I would like to contribute
-                        $<input
-                            class='money'
-                            data-bind='
-                                enable: subsidy_choice() == "contributing",
-                                value: subsidy_value,
-                                valueUpdate: "afterkeydown"
-                            '
-                        ></input>
-                        to the transportation subsidy.  For those who are comfortable, we suggest
-                        a contribution of $10 per night, but any amount is appreciated.
-                    </p>
-                    <p>
-                        <input
-                            type='radio'
-                            value='none'
-                            data-bind='checked: subsidy_choice, attr: { name: "travel" + $index() }'
-                        ></input>
-                        I would not like to participate in the transportation subsidy.
-                    </p>
-                </div>
+            <!-- ko if: $parent.visible_section() == $data -->
+            <div class='pmt_subsection'>
+                <p>
+                    <input
+                        type='radio'
+                        value='requesting'
+                        data-bind='checked: subsidy_choice, attr: { name: "travel" + $index() }'
+                    ></input>
+                    I anticipate significant transportation expenses (such as a long-distance
+                    flight) and would like to request a transportation subsidy of
+                    $<input
+                        class='money'
+                        data-bind='
+                            enable: subsidy_choice() == "requesting",
+                            value: subsidy_value,
+                            valueUpdate: "afterkeydown"
+                        '
+                    </input>.
+                    At this time we are accepting requests of $100; if there are enough
+                    contributions, we will ask how much your travel expenses were and increase
+                    subsidies appropriately.
+                </p>
+                <p>
+                    <input
+                        type='radio'
+                        value='contributing'
+                        data-bind='checked: subsidy_choice, attr: { name: "travel" + $index() }'
+                    ></input>
+                    I would like to contribute
+                    $<input
+                        class='money'
+                        data-bind='
+                            enable: subsidy_choice() == "contributing",
+                            value: subsidy_value,
+                            valueUpdate: "afterkeydown"
+                        '
+                    ></input>
+                    to the transportation subsidy.  For those who are comfortable, we suggest a
+                    contribution of $10 per night, but any amount is appreciated.
+                </p>
+                <p>
+                    <input
+                        type='radio'
+                        value='none'
+                        data-bind='checked: subsidy_choice, attr: { name: "travel" + $index() }'
+                    ></input>
+                    I would not like to participate in the transportation subsidy.
+                </p>
+            </div>
 
-                <div class='pmt_subsection'>
-                    <p>
-                        <input
-                            type='radio'
-                            value='requesting'
-                            data-bind='checked: aid_choice, attr: { name: "assistance" + $index() }'
-                        ></input>
-                        I am seeking assistance of
-                        $<input
-                            class="money"
-                            data-bind='
-                                enable: aid_choice() == "requesting",
-                                value: aid_value,
-                                valueUpdate: "afterkeydown"
-                            '
-                        ></input>
-                        in order to attend the party.
-                    </p>
-                    <p>
-                        <input
-                            type='radio'
-                            value='contributing'
-                            data-bind='checked: aid_choice, attr: { name: "assistance" + $index() }'
-                        ></input>
-                        I would like to pledge up to
-                        $<input
-                            class="money"
-                            data-bind='
-                                enable: aid_choice() == "contributing",
-                                value: aid_pledge,
-                                valueUpdate: "afterkeydown"
-                            '
-                        ></input>
-                        to help others attend the party.  Please include
-                        $<input
-                            class="money"
-                            data-bind='
-                                enable: aid_choice() == "contributing",
-                                value: aid_value,
-                                valueUpdate: "afterkeydown"
-                            '
-                        ></input>
-                        of this amount in my registration.  We rarely have to ask for more than $10
-                        from any contributor; if you include this amount now, it is likely we will
-                        not need to ask you again.
-                    </p>
-                    <p>
-                        <input
-                            type='radio'
-                            value='none'
-                            data-bind='checked: aid_choice, attr: { name: "assistance" + $index() }'
-                        ></input>
-                        I would not like to participate in financial assistance.
-                    </p>
-                </div>
+            <div class='pmt_subsection'>
+                <p>
+                    <input
+                        type='radio'
+                        value='requesting'
+                        data-bind='checked: aid_choice, attr: { name: "assistance" + $index() }'
+                    ></input>
+                    I am seeking assistance of
+                    $<input
+                        class="money"
+                        data-bind='
+                            enable: aid_choice() == "requesting",
+                            value: aid_value,
+                            valueUpdate: "afterkeydown"
+                        '
+                    ></input>
+                    in order to attend the party.
+                </p>
+                <p>
+                    <input
+                        type='radio'
+                        value='contributing'
+                        data-bind='checked: aid_choice, attr: { name: "assistance" + $index() }'
+                    ></input>
+                    I would like to pledge up to
+                    $<input
+                        class="money"
+                        data-bind='
+                            enable: aid_choice() == "contributing",
+                            value: aid_pledge,
+                            valueUpdate: "afterkeydown"
+                        '
+                    ></input>
+                    to help others attend the party.  Please include
+                    $<input
+                        class="money"
+                        data-bind='
+                            enable: aid_choice() == "contributing",
+                            value: aid_value,
+                            valueUpdate: "afterkeydown"
+                        '
+                    ></input>
+                    of this amount in my registration.  We rarely have to ask for more than $10 from
+                    any contributor; if you include this amount now, it is likely we will not need
+                    to ask you again.
+                </p>
+                <p>
+                    <input
+                        type='radio'
+                        value='none'
+                        data-bind='checked: aid_choice, attr: { name: "assistance" + $index() }'
+                    ></input>
+                    I would not like to participate in financial assistance.
+                </p>
+            </div>
 
-                <div class='pmt_subsection'>
-                    <p>
-                        <input type='checkbox' data-bind='checked: confirmed'></input>
-                        I agree to pay for this registration and confirm that I have read and
-                        understood the retreat policies listed above.
-                    </p>
-                </div>
-            </div><!-- /ko -->
+            <div class='pmt_subsection'>
+                <p>
+                    <input type='checkbox' data-bind='checked: confirmed'></input>
+                    I agree to pay for this registration and confirm that I understand the retreat
+                    policies listed above.
+                </p>
+            </div>
 
             <div
                 class='action-area'
-                data-bind="
-                    template: { name: 'action-area', data: $data },
-                    visible: status() == 'changed'
-                "
+                data-bind="template: { name: 'action-area', data: $data }"
             ></div>
+            <!-- /ko -->
         </div>
+        <!-- /ko -->
+    </div>
     <!-- /ko -->
 
     <!-- ko with: payment -->
-        <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-            <div class='message' data-bind='text: message'></div>
-
-            <!-- ko foreach: sections --><div class='subsection' data-bind='css: status'>
-                <h2 data-bind='text: email'></h2>
-                <table class='pmt_table'><tbody>
-                    <tr>
-                        <td class='borderless pmt_group'>Items</td>
-                        <td class='cell_info_wide bg_slate'>Rooms</td>
-                        <td
-                            class='cell_value bg_slate'
-                            data-bind='text: _.dollar_val(rooms, 2)'
-                        ></td>
-                    </tr>
-                    <tr>
-                        <td class='borderless pmt_group'></td>
-                        <td class='cell_info_wide bg_slate'>Meals</td>
-                        <td
-                            class='cell_value bg_slate'
-                            data-bind='text: _.dollar_val(meals, 2)'
-                        ></td>
-                    </tr>
-                    <!-- ko if: aid != 0 --><tr>
-                        <td class='borderless pmt_group'></td>
-                        <td class='cell_info_wide bg_slate'>Financial assistance</td>
-                        <td
-                            class='cell_value bg_slate'
-                            data-bind='text: _.dollar_val(aid, 2)'
-                        ></td>
-                    </tr><!-- /ko -->
-                    <!-- ko if: subsidy != 0 --><tr>
-                        <td class='borderless pmt_group'></td>
-                        <td class='cell_info_wide bg_slate'>Transport subsidy</td>
-                        <td
-                            class='cell_value bg_slate'
-                            data-bind='text: _.dollar_val(subsidy, 2)'
-                        ></td>
-                    </tr><!-- /ko -->
-                    <!-- ko foreach: credits --><tr>
-                        <td
-                            class='borderless pmt_group'
-                            data-bind='text: $index() == 0 ? "Payments" : ""'
-                        ></td>
-                        <td
-                            class='cell_info_wide bg_green'
-                            data-bind='text: "Payment / (refund) recorded " + date'
-                        ></td>
-                        <td
-                            class='cell_value bg_green'
-                            data-bind='text: _.dollar_val(amount, 2)'
-                        ></td>
-                    </tr><!-- /ko -->
-                    <!-- ko foreach: expenses --><tr>
-                        <td
-                            class='borderless pmt_group'
-                            data-bind='text: $index() == 0 ? "Credits" : ""'
-                        ></td>
-                        <td
-                            class='cell_info_wide bg_slate'
-                            data-bind='text: "Credit recorded " + date'
-                        ></td>
-                        <td
-                            class='cell_value bg_slate'
-                            data-bind='text: _.dollar_val(amount, 2)'
-                        ></td>
-                    </tr><!-- /ko -->
-                    <tr>
-                        <td class='borderless pmt_group'>Total</td>
-                        <td
-                            class='cell_info_wide'
-                            data-bind='
-                                text: $parent.total_label(due),
-                                css: $parent.total_style(due)
-                            '
-                        ></td>
-                        <td
-                            class='cell_value'
-                            data-bind='
-                                text: _.dollar_val(Math.abs(due), 2),
-                                css: $parent.total_style(due)
-                            '
-                        ></td>
-                    </tr>
-                </tbody></table>
-            </div><!-- /ko -->
-
-            <!-- ko if: display_section() == 'due' -->
-            <p>
-                 A total of <b><span data-bind='text: _.dollar_val(Math.abs(total_due()), 2)'>
-                 </span></b> is due for the above registrations.  <b>Please pay promptly.</b>  If
-                 you are not paying for all of these registrations, please make sure the other
-                 people know how much they owe.
-            </p>
-
-            <p>
-                Please send Andrew your payment via one of the following.  For any questions, email
-                him at onethreeseven@gmail.com.
-                <ul>
-                    <li>
-                        <b>(Preferred)</b> Venmo.  If you don't have an account, sign up at
-                        <a href="http://venmo.com/">venmo.com</a>; it's easy.  Then use
-                        <a href="https://venmo.com/onethreeseven">this link</a> to send your
-                        payment.
-                    </li>
-                    <li>
-                        Check or cash in person, if you will see Andrew in the next week or two.
-                    </li>
-                    <li>
-                        Check by mail.  Send an email if you don't have Andrew's address.
-                    </li>
-                    <li>
-                        <b>(As a last resort)</b> PayPal.  This is a last resort because we have
-                        discovered that many ways of using the PayPal interface will quietly cause
-                        a percentage of the money to disappear on its way to us, despite all claims
-                        to the contrary.  If you must use PayPal, send an email for instructions.
-                    </li>
-                </ul>
-            </p>
-            <!-- /ko -->
-
-            <!-- ko if: display_section() == 'excess' -->
-            <p>
-                You seem to have overpaid by a total of
-                <b><span data-bind='text: _.dollar_val(Math.abs(total_due()), 2)'></span></b>.
-                Perhaps you are requesting subsidies or financial aid in excess of your party costs,
-                your payment was in the incorrect amount, or you changed your registration.  Andrew
-                will be in touch to resolve the situation.
-            </p>
-            <!-- /ko -->
-
-            <!-- ko if: display_section() == 'zero' -->
-            <p>
-                Thanks for paying!  If you have any concerns with your registration, don't hesitate
-                to contact us.
-            </p>
-            <!-- /ko -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <!-- ko foreach: $root.group_regs_by_name -->
+        <!-- ko if: confirmed -->
+        <div class='subsection' data-bind='css: $parent.status_for_due(due)'>
+            <div data-bind="template: { name: 'name-and-email', data: $data }"></div>
+            <table class='pmt_table'><tbody>
+                <!-- ko foreach: credits -->
+                <tr data-bind='css: date ? "bg_slate" : "bg_gray"'>
+                    <td class='cell_info_wide'>
+                        <!-- ko if: date -->[<span data-bind='text: date'></span>]<!-- /ko -->
+                        <span data-bind='text: category'></span>
+                    </td>
+                    <td class='cell_value' data-bind='text: _.dollars(-amount)'></td>
+                </tr>
+                <!-- /ko -->
+                <tr data-bind='css: $parent.total_style(due)'>
+                    <td class='cell_info_wide' data-bind='text: $parent.total_label(due)'></td>
+                    <td class='cell_value' data-bind='text: _.dollars(Math.abs(due))'></td>
+                </tr>
+            </tbody></table>
         </div>
+        <!-- /ko -->
+        <!-- /ko -->
+
+        <!-- ko if: display_section() == 'due' -->
+        <p>
+             A total of <b><span data-bind='text: _.dollars(Math.abs(due()))'></span></b> is due for
+             the above registrations.  <b>Please pay promptly.</b>  If you are not paying for your
+             entire group, please make sure the others know how much they owe.
+        </p>
+
+        <p>
+            Please send Andrew your payment via one of the following.
+            <ul>
+                <li>
+                    <b>(Preferred)</b> Venmo.  If you don't have an account, sign up at
+                    <a href="http://venmo.com/" target="_blank">venmo.com</a>; it's easy.  Then use
+                    <a href="https://venmo.com/onethreeseven" target="_blank">this link</a> to send
+                    your payment.
+                </li>
+                <li>
+                    Check or cash in person, if you will see Andrew in the next week or two.
+                </li>
+                <li>
+                    Check by mail.  Send an email if you don't have Andrew's address.
+                </li>
+                <li>
+                    <b>(As a last resort)</b> PayPal.  This is a last resort because we have
+                    discovered that many ways of using the PayPal interface will quietly cause a
+                    percentage of the money to disappear on its way to us, despite all claims to the
+                    contrary.  If you must use PayPal, send an email for instructions.
+                </li>
+            </ul>
+        </p>
+        <!-- /ko -->
+
+        <!-- ko if: display_section() == 'excess' -->
+        <p>
+            You seem to have overpaid by a total of
+            <b><span data-bind='text: _.dollars(Math.abs(due()))'></span></b>.  Perhaps you are
+            requesting subsidies or financial aid in excess of your party costs, your payment was in
+            the incorrect amount, or you changed your registration.  Andrew will be in touch to
+            resolve the situation.
+        </p>
+        <!-- /ko -->
+
+        <!-- ko if: display_section() == 'zero' -->
+        <p>
+            Thanks for paying!  If you have concerns with your registration, don't hesitate to ask.
+        </p>
+        <!-- /ko -->
+    </div>
     <!-- /ko -->
 
     <!-- ko with: guest_list -->
-        <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-            <p>
-                We're still using the
-                <a href="http://multivac.hrsfans.org/index.php?title=Retreat_2015">wiki</a>
-                to organize activities, games, cooking, and cleaning.  Head over there to sign up
-                for these things!
-            </p>
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <p>
+            We're still using the
+            <a href="http://multivac.hrsfans.org/index.php?title=Summer_Party_2015" target="_blank">
+            wiki</a> to organize activities, games, cooking, and cleaning.  Head over there to sign
+            up for these things!
+        </p>
 
-            <p>
-                Also, here are the <span data-bind='text: guests().length'></span> people who are
-                coming to the party, and when:
-            </p>
-            <table class='guest_list'>
-                <tr>
-                    <td class='borderless'></td>
-                    <!-- ko foreach: $root.party_data.days -->
-                        <td
-                            class='guest_day bg_gray'
-                            data-bind='
-                                text: name +
-                                ($parent.counts()[id] > 0 ? " (" + $parent.counts()[id] + ")" : "")
-                            '
-                        ></td>
-                    <!-- /ko -->
-                </tr>
-                <!-- ko foreach: guests -->
-                <tr>
-                    <td class='cell_name bg_gray' data-bind='text: name'></td>
-                    <!-- ko foreach: $root.party_data.days -->
-                        <td
-                            data-bind='css: $parents[1].class_for_cell($index(), $parent.nights)'
-                        ></td>
-                    <!-- /ko -->
-                </tr>
+        <p>
+            Also, here are the <span data-bind='text: $root.regs_by_name().length'></span> people
+            who are coming to the party, and when:
+        </p>
+        <table class='guest_list'><tbody>
+            <tr>
+                <td class='borderless'></td>
+                <!-- ko foreach: $root.party_data.days -->
+                <td
+                    class='guest_day bg_gray'
+                    data-bind='
+                        text: name +
+                        ($parent.counts()[id] > 0 ? " (" + $parent.counts()[id] + ")" : "")
+                    '
+                ></td>
                 <!-- /ko -->
-            </table>
+            </tr>
+            <!-- ko foreach: $root.regs_by_name -->
+            <tr>
+                <td class='cell_name bg_gray' data-bind='text: $data.name'></td>
+                <!-- ko foreach: $root.party_data.days -->
+                <td data-bind='css: $parents[1].class_for_cell($index(), $parent.name)'></td>
+                <!-- /ko -->
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko if: is_admin -->
+
+    <!-- ko with: payments -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <div class='payment_editor'>
+            <!-- ko if: selected --><p class='color_red'>Editing selected payment:</p><!-- /ko -->
+            <!-- ko if: !selected() --><p>Recording new payment:</p><!-- /ko -->
+            <p>
+                <div class="payment_left">Received</div>
+                $<input
+                    class='money'
+                    data-bind='value: edit_amount, valueUpdate: "afterkeydown"'
+                ></input>
+                from
+                <input
+                    class='payment_input'
+                    data-bind='value: edit_from, valueUpdate: "afterkeydown"'
+                ></input>
+                via
+                <input
+                    class='payment_input'
+                    data-bind='value: edit_via, valueUpdate: "afterkeydown"'
+                ></input>
+            </p>
+
+            <!-- ko foreach: edit_credits -->
+            <p>
+                <div class="payment_left">Credit</div>
+                $<input
+                    class='money'
+                    data-bind='value: amount, valueUpdate: "afterkeydown"'
+                ></input>
+                to
+                <select
+                    class='payment_select'
+                    data-bind='
+                        options: $parent.regs,
+                        optionsText: $parent.format_reg,
+                        optionsValue: "name",
+                        optionsCaption: "",
+                        value: name
+                    '
+                ></select>
+            </p>
+            <!-- /ko -->
+            <p>
+                <a class="pointer" data-bind='click: add_edit_credit'>
+                    (attach another registration)
+                </a>
+            </p>
+
+            <div
+                class='action-area'
+                data-bind="template: { name: 'action-area', data: $data }"
+            ></div>
         </div>
+
+        <p>
+            Net received: <b><span data-bind='text: _.dollars(total())'></span></b>
+        </p>
+        <p class='note'>
+            Click an entry to edit it.  Entries in red have not been fully credited.
+        </p>
+        <table class='payment_records'><tbody>
+            <!-- ko foreach: data -->
+            <tr class='pointer' data-bind='click: $parent.cg_select, css: $parent.cg_class($data)'>
+                <td class='cell_label_medium' data-bind='text: date'></td>
+                <td class='payment_record_desc'>
+                    <p>
+                        <span data-bind='text: _.dollars(amount)'></span> from
+                        <span data-bind='text: details.from'></span> via
+                        <span data-bind='text: details.via'></span>
+                    </p>
+                    <!-- ko foreach: credits -->
+                    <p>
+                        <span data-bind='text: _.dollars(amount)'></span> credited to
+                        <span data-bind='text: name'></span>
+                    </p>
+                    <!-- /ko -->
+                </td>
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: expenses -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <div class='payment_editor'>
+            <!-- ko if: selected --><p class='color_red'>Editing selected expense:</p><!-- /ko -->
+            <!-- ko if: !selected() --><p>Recording new expense:</p><!-- /ko -->
+            <p>
+                <div class="payment_left">Expense of</div>
+                $<input
+                    class='money'
+                    data-bind='value: edit_amount, valueUpdate: "afterkeydown"'
+                ></input>
+                for
+                <input
+                    class='payment_input_wide'
+                    data-bind='value: edit_description, valueUpdate: "afterkeydown"'
+                ></input>
+            </p>
+
+            <!-- ko foreach: edit_credits -->
+            <p>
+                <div class="payment_left">Credit</div>
+                $<input
+                    class='money'
+                    data-bind='value: amount, valueUpdate: "afterkeydown"'
+                ></input>
+                to
+                <select
+                    class='payment_select_narrow'
+                    data-bind='
+                        options: $root.regs_by_name,
+                        optionsText: "name",
+                        optionsValue: "name",
+                        optionsCaption: "",
+                        value: name
+                    '
+                ></select>
+                in category
+                <select class='payment_select' data-bind='value: category'>
+                    <option value=''></option>
+                    <option value='Expense: Deposits'>Expense: Deposits</option>
+                    <option value='Expense: Houses / Hotels'>Expense: Houses / Hotels</option>
+                    <option value='Expense: Meals'>Expense: Meals</option>
+                    <option value='Expense: Snacks'>Expense: Snacks</option>
+                    <option value='Expense: Supplies'>Expense: Supplies</option>
+                    <option value='Expense: Other'>Expense: Other</option>
+                </select>
+            </p>
+            <!-- /ko -->
+            <p>
+                <a class="pointer" data-bind='click: add_edit_credit'>
+                    (attach another category)
+                </a>
+            </p>
+
+            <div
+                class='action-area'
+                data-bind="template: { name: 'action-area', data: $data }"
+            ></div>
+        </div>
+
+        <p class='note'>
+            Click an entry to edit it.  Entries in red have not been fully credited.
+        </p>
+        <table class='payment_records'><tbody>
+            <!-- ko foreach: data -->
+            <tr class='pointer' data-bind='click: $parent.cg_select, css: $parent.cg_class($data)'>
+                <td class='cell_label_medium' data-bind='text: date'></td>
+                <td class='payment_record_desc'>
+                    <p>
+                        <span data-bind='text: _.dollars(amount)'></span> for
+                        <span data-bind='text: details.description'></span>
+                    </p>
+                    <!-- ko foreach: credits -->
+                    <p>
+                        [<span data-bind='text: category'></span>]
+                        <span data-bind='text: _.dollars(amount)'></span> credited to
+                        <span data-bind='text: name'></span>
+                    </p>
+                    <!-- /ko -->
+                </td>
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: credits -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <div class='payment_editor'>
+            <!-- ko if: selected --><p class='color_red'>Editing selected credit:</p><!-- /ko -->
+            <!-- ko if: !selected() --><p>Recording new credit:</p><!-- /ko -->
+            <p>
+                <div class="payment_left">Credit</div>
+                $<input
+                    class='money'
+                    data-bind='value: edit_amount, valueUpdate: "afterkeydown"'
+                ></input>
+                to
+                <select
+                    class='payment_select_narrow'
+                    data-bind='
+                        options: $root.regs_by_name,
+                        optionsText: "name",
+                        optionsValue: "name",
+                        optionsCaption: "",
+                        value: edit_name
+                    '
+                ></select>
+                in category
+                <select class='payment_select' data-bind='value: edit_category'>
+                    <option value=''></option>
+                    <option value='Adjustment: Meals'>Adjustment: Meals</option>
+                    <option value='Adjustment: Rooms'>Adjustment: Rooms</option>
+                    <option value='Adjustment: Other'>Adjustment: Other</option>
+                    <option value='Donations'>Donations</option>
+                </select>
+            </p>
+
+            <div
+                class='action-area'
+                data-bind="template: { name: 'action-area', data: $data }"
+            ></div>
+        </div>
+
+        <p class='note'>Click an entry to edit it.</p>
+        <table class='payment_records'><tbody>
+            <!-- ko foreach: data -->
+            <tr class='pointer' data-bind='click: $parent.select, css: $parent.credit_class($data)'>
+                <td class='cell_label_medium' data-bind='text: date'></td>
+                <td class='payment_record_desc'>
+                    <p>
+                        [<span data-bind='text: category'></span>]
+                        <span data-bind='text: _.dollars(amount)'></span> credited to
+                        <span data-bind='text: name'></span>
+                    </p>
+                    <!-- /ko -->
+                </td>
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: registrations -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <p data-bind='with: counts'>
+            <b><span data-bind='text: no_nights'></span></b> with no nights selected<br>
+            <b><span data-bind='text: unconfirmed'></span></b> not yet confirmed<br>
+            <b><span data-bind='text: unpaid'></span></b> with outstanding balances<br>
+            <b><span data-bind='text: complete'></span></b> complete
+        </p>
+
+
+        <p class='note'>Click an entry to select its group for editing.</p>
+        <table class="admin_reg_table"><tbody>
+            <tr>
+                <th>Name</th>
+                <th>Nights</th>
+                <th>Due</th>
+                <th>Rooms</th>
+                <th>Meals</th>
+                <th>Aid</th>
+                <th>Subsidy</th>
+                <th>Payments</th>
+                <th>Expenses</th>
+                <th>Other</th>
+                <th>Pledge</th>
+            </tr>
+            <!-- ko foreach: data -->
+            <tr class='pointer' data-bind='click: $parent.select'>
+                <td class='cell_name bg_gray' data-bind='text: reg.name'></td>
+                <td
+                    class='cell_value'
+                    data-bind='
+                        text: reg.num_nights > 0 ? reg.num_nights : "",
+                        css: reg.confirmed ? "bg_green" : "bg_gray"
+                    '
+                ></td>
+                <td
+                    class='cell_value'
+                    data-bind='
+                        text: _.dollars(reg.due, 2, true),
+                        css: Math.abs(reg.due) >= 0.005 ? "bg_yellow" : "bg_gray"
+                    '
+                ></td>
+                <!-- ko foreach: $parent.total_by -->
+                <td
+                    class='cell_value bg_gray'
+                    data-bind='text: _.dollars($parent.totals[$data], 2, true)'
+                ></td>
+                <!-- /ko -->
+                <td
+                    class='cell_value bg_slate'
+                    data-bind='text: _.dollars(reg.aid_pledge, 0, true)'
+                ></td>
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: financials -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <p>
+            Total outstanding balance:
+            <b><span data-bind='text: _.dollars(grand_total())'></span></b>
+        </p>
+
+        <!-- ko foreach: data -->
+        <h3 data-bind='text: group'></h2>
+        <table class='pmt_table'><tbody>
+            <!-- ko foreach: values -->
+            <tr class='bg_slate'>
+                <td class='cell_info_wide' data-bind='text: category'></td>
+                <td class='cell_value_wide' data-bind='text: _.dollars(amount)'></td>
+            </tr>
+            <!-- /ko -->
+            <tr data-bind='css: $parent.total_style(total)'>
+                <td class='cell_info_wide'>Total</td>
+                <td class='cell_value_wide' data-bind='text: _.dollars(total)'></td>
+        </tbody></table>
+        <!-- /ko -->
+        <p class='note'>
+            * A negative total here means the treasurer has collected more money than he or she has
+            paid, and thus owes the party fund money.
+        </p>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: meals -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <table class="meals_table"><tbody>
+            <tr>
+                <th></th>
+                <!-- ko foreach: $root.party_data.meals -->
+                <th class="meal_header_name" data-bind='text: name'></th>
+                <!-- /ko -->
+                <th>Restrictions</th>
+            </tr>
+            <tr>
+                <td class="meal_summary">Cost</td>
+                <!-- ko foreach: $root.party_data.meals -->
+                <td class="meal_total bg_gray" data-bind='text: _.dollars(cost, 0)'></td>
+                <!-- /ko -->
+                <td class='borderless'></td>
+            </tr>
+            <tr>
+                <td class="meal_summary">Count</td>
+                <!-- ko foreach: $root.party_data.meals -->
+                <td class="meal_total bg_gray" data-bind='text: $parent.counts()[id]'></td>
+                <!-- /ko -->
+                <td class='borderless'></td>
+            </tr>
+            <!-- ko foreach: $root.regs_by_name -->
+            <tr>
+                <td class='cell_name bg_gray' data-bind='text: name'></td>
+                <!-- ko foreach: $root.party_data.meals -->
+                <td class='meal_cell'><span data-bind='visible: $parent.meals[id]'>✓</span></td>
+                <!-- /ko -->
+                <td
+                    class='cell_info_medium bg_gray'
+                    data-bind='text: dietary, attr: { title: dietary }'
+                ></td>
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: other_info -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <div data-bind="foreach: $root.regs_by_name">
+            <h3 class="personal_header">
+                <span data-bind="text: name"></span>
+                <!-- ko if: email -->&lt;<span data-bind='text: email'></span>&gt;<!-- /ko -->
+                <!-- ko if: full_name -->(<span data-bind="text: full_name"></span>)<!-- /ko -->
+            </h3>
+            <!-- ko if: emergency -->
+            <p class="personal_item">
+                <b>Emergency contact:</b> <span data-bind="text: emergency"></span>
+            </p>
+            <!-- /ko -->
+            <!-- ko if: medical -->
+            <p class="personal_item">
+                <b>Medical information:</b> <span data-bind="text: medical"></span>
+            </p>
+            <!-- /ko -->
+            <!-- ko if: children -->
+            <p class="personal_item">
+                <b>Young children:</b> <span data-bind="text: children"></span>
+            </p>
+            <!-- /ko -->
+            <!-- ko if: guest -->
+            <p class="personal_item" data-bind="if: guest">
+                <b>Guest of:</b> <span data-bind="text: guest"></span>
+            </p>
+            <!-- /ko -->
+        </div>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: phone_list -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <table class="phone_table"><tbody>
+            <!-- ko foreach: data -->
+            <tr>
+                <td class="cell_name bg_gray" data-bind="text: $data[0]"></td>
+                <td
+                    class="cell_info_wide bg_yellow"
+                    data-bind="text: $data[1], attr: { title: $data[1] }"
+                ></td>
+                <td class="borderless phone_table_separator"></td>
+                <td
+                    class="cell_info_wide bg_yellow"
+                    data-bind="text: $data[2], attr: { title: $data[2] }"
+                ></td>
+                <td class="cell_name bg_gray" data-bind="text: $data[3]"></td>
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: email_list -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <p class="email_list" data-bind="foreach: $root.regs_by_name">
+            <!-- ko if: email --><span data-bind="text: email"></span><br><!-- /ko -->
+        </p>
+    </div>
     <!-- /ko -->
 
     <!-- /ko -->
-
 </body>
 
 </html>

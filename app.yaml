@@ -5,18 +5,6 @@ api_version: 1
 threadsafe: true
 
 handlers:
-  - url: /admin
-    static_files: static/admin.html
-    upload: static/admin.html
-    login: admin
-    secure: always
-
-  - url: /static/admin.js
-    static_files: static/admin.js
-    upload: static/admin.js
-    login: admin
-    secure: always
-
   - url: /
     static_files: static/index.html
     upload: static/index.html
@@ -28,31 +16,16 @@ handlers:
     upload: static/[^/]*\.(css|js|png)
     secure: always
 
-  - url: /([^/]*\.html)
-    static_files: static/\1
-    upload: static/[^/]*\.html
-    secure: always
-
-  - url: /_ah/login_required
-    script: main.application
-    secure: always
-
-  - url: /openid_redirect
-    script: main.application
-    secure: always
-
-  - url: /authorize
-    script: main.application
-    secure: always
-
-  - url: /call/admin/.*
+  - url: /call/admin/[^/]*
     script: main.application
     login: admin
+    auth_fail_action: unauthorized
     secure: always
 
   - url: /call/[^/]*
     script: main.application
     login: required
+    auth_fail_action: unauthorized
     secure: always
 
 skip_files:

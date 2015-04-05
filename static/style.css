@@ -29,6 +29,10 @@ li {
     padding-top: 5px;
 }
 
+p {
+    font-weight: normal;
+}
+
 a {
     text-decoration: none;
     color: #11e;
@@ -58,7 +62,7 @@ table {
     white-space: nowrap;
 }
 
-.cell_info_medium, .cell_info_wide, .cell_info_xwide {
+.cell_info_medium, .cell_info_wide {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -70,8 +74,8 @@ table {
 }
 
 .cell_name {
-    width: 100px;
-    max-width: 100px;
+    width: 120px;
+    max-width: 120px;
 }
 
 .cell_label_short {
@@ -99,15 +103,18 @@ table {
     max-width: 300px;
 }
 
-.cell_info_xwide {
-    width: 400px;
-    max-width: 400px;
+.cell_value, .cell_value_wide {
+    text-align: right;
 }
 
 .cell_value {
-    width: 80px;
-    max-width: 80px;
-    text-align: right;
+    width: 70px;
+    max-width: 70px;
+}
+
+.cell_value_wide {
+    width: 90px;
+    max-width: 90px;
 }
 
 .cell_cost {
@@ -162,10 +169,6 @@ table {
     background-image: linear-gradient(to left, #a9f, #6f9 80%);
 }
 
-input, select, button, textarea {
-    color: #000;
-}
-
 .color_red {
     color: #f00;
 }
@@ -176,45 +179,6 @@ input, select, button, textarea {
     font-size: 11px;
 }
 
-.login-container-1 {
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    display: table;
-}
-
-.login-container-2 {
-    display: table-cell;
-    vertical-align: middle;
-}
-
-.login {
-    width: 400px;
-    height: 200px;
-    padding: 10px;
-    margin: auto;
-    display: block;
-    border: 1px solid black;
-}
-
-.login-input-container {
-    height: 40px;
-}
-
-.login form {
-    margin-left: 20px;
-}
-
-.login select {
-    width: 150px;
-}
-
-input.login-input {
-    width: 200px;
-}
-
 .section, .header_section {
     position: relative;
     max-width: 1000px;
@@ -222,13 +186,13 @@ input.login-input {
 }
 
 .section {
-    padding: 30px 10px 10px 10px;
-    margin: 0px auto 0px auto;
+    padding: 10px;
+    margin: 0px auto 0px;
 }
 
 .header_section {
-    padding: 5px 10px 5px 10px;
-    margin: 0px auto 0px auto;
+    padding: 5px 10px;
+    margin: 0px auto 25px;
 }
 
 .selector_section {
@@ -237,7 +201,7 @@ input.login-input {
     display: table;
     table-layout: fixed;
     padding: 0px;
-    margin: 25px auto 10px auto;
+    margin: 10px auto;
 }
 
 .section_selector_container {
@@ -251,29 +215,26 @@ input.login-input {
     border: 1px solid black;
 }
 
+.subsection {
+    position: relative;
+    margin: 20px;
+    padding: 0px 15px 15px;
+    border: 1px solid black;
+}
+
 .section_selected {
     font-weight: bold;
     border: 2px solid black;
 }
 
-div.subsection {
-    position: relative;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    margin-left: 20px;
-    margin-right: 20px;
-    padding-top: 0px;
-    padding-left: 15px;
-    padding-right: 15px;
-    padding-bottom: 15px;
-    border: 1px solid black;
+.message {
+    font-weight: bold;
+    float: right;
 }
 
-.message {
-    position: absolute;
-    right: 18px;
-    top: 18px;
-    font-weight: bold;
+.action-area {
+    min-height: 25px;
+    margin-top: 10px;
 }
 
 .logout {
@@ -312,18 +273,6 @@ div.subsection {
     background-color: #fff;
 }
 
-.authorization-list-container {
-    background-color: #eee;
-    border: 1px solid black;
-    padding: 15px;
-    margin: auto;
-    width: 600px;
-}
-
-table.authorization-list {
-    width: 600px;
-}
-
 .reg_table {
     width: 100%;
     table-layout: fixed;
@@ -332,12 +281,10 @@ table.authorization-list {
 td.reg_label {
     width: 300px;
     vertical-align: top;
-    padding-top: 10px;
-    padding-bottom: 10px;
-    padding-right: 10px;
+    padding: 10px 10px 10px 0px;
 }
 
-.res_table, .pmt_table, .guest_list, .payment_records, .admin_reg_table, .aid_table, .meals_table,
+.res_table, .pmt_table, .guest_list, .payment_records, .admin_reg_table, .meals_table,
 .phone_table {
     margin-left: auto;
     margin-right: auto;
@@ -348,18 +295,8 @@ td.reg_label {
     margin-bottom: 10px;
 }
 
-.admin_reg_table, .aid_table, .meals_table, .phone_table, .payment_records {
-    margin-bottom: 20px;
-}
-
-td.reg_option {
-    width: 60px;
-    max-width: 60px;
-}
-
-td.pmt_group {
-    width: 70px;
-    max-width: 70px;
+.admin_reg_table, .meals_table, .phone_table, .payment_records {
+    margin: 15px auto;
 }
 
 td.guest_day {
@@ -368,20 +305,16 @@ td.guest_day {
     text-align: center;
 }
 
-.reg_input, .auth_input {
+.reg_input {
     width: 100%;
 }
 
 div.pmt_subsection, div.payment_editor {
     background-color: #eee;
     max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
     border: 1px solid black;
-    padding-left: 10px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-bottom: 15px;
+    padding: 5px 10px;
+    margin: 15px auto;
 }
 
 input.money {
@@ -404,12 +337,16 @@ input.payment_input {
     width: 250px;
 }
 
-select.payment_select {
+input.payment_input_wide {
     width: 500px;
 }
 
-select.expense_select {
+select.payment_select {
     width: 300px;
+}
+
+select.payment_select_narrow {
+    width: 150px;
 }
 
 .payment_left {
@@ -427,18 +364,16 @@ select.expense_select {
     margin-top: 2px;
 }
 
-.aid_subparagraph {
-    margin-left: 15px;
-    margin-bottom: 5px;
-    margin-top: 0px;
-}
-
 .meal_summary {
     font-weight: bold;
 }
 
 .meal_total {
     text-align: right;
+}
+
+.meal_cell {
+    text-align: center;
 }
 
 .meal_cell, .meal_header_name, .meal_total {
@@ -451,9 +386,7 @@ select.expense_select {
 }
 
 .personal_item {
-    margin-left: 20px;
-    margin-top: 0px;
-    margin-bottom: 5px;
+    margin: 0px 0px 5px 20px;
 }
 
 .personal_header {

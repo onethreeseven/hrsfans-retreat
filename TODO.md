@@ -1,95 +1,60 @@
-# Specific Items
+# TODO
 
-## v4 Overhaul
+## v5 - React
 
-### Models
-  * Revised group-based registration
-      * Better handling of "on behalf of" registrations
-      * Better handling of guests without email addresses
-      * Delete registrations properly
-      * Improved authorizations interface
-      * No-email-sending design
-  * Improved financial data model
-      * Remove ad-hoc tables
-      * Uniform categorization between inflows and outflows
-      * Present the financials table in a way that directly correlates with final reporting
-  * Generally improved data model
-      * No "Conspiracies"
-      * Unified data return for admin and regular users
-      * Streamline and simplify as much as possible
-  * Goal: stable "final" design
+This version switches to React from Knockout.  It might cause minor user-visible improvements, but
+the focus is getting off Knockout (and hopefully simplifying the HTML and CoffeeScript).
 
-### UI
-  * Unified admin and main interface
-  * Streamlined step-based user experience
-  * More comprehensible handling of financials, including accounting for HRSFANS advances
-  * Switch to Bootstrap
-
-### Engineering
-  * Minor refactors to Coffeescript
-  * Disallow non-Google logins
+**NB**: I've deliberately avoided updating the Javascript libraries in v4, since we'll be upturning
+everything here anyway.  This version should definitely update jQuery and underscore.
 
 
-## v5 and Beyond
+## v6 - Bootstrap
 
-### Features
-  * Privacy filter on reserved rooms - v6 or as needed
-  * Proper switch for closing registration - v6 or as needed
-
-### UI
-  * Look into saving partial data or autosaving - v5
-  * Improve error reporting in the UI - v6
-  * Refresh properly if an API call returns unauthorized - v6
-  * Implement an onbeforeunload handler - v6
-  * Make it look nicer - v7?
-
-### Documentation
-  * Finish the README - v6
-  * Comment the API, Coffeescript and CSS - v6
-
-### Engineering
-  * Consider switching to React - v5
-  * Clean up HTML and CSS - v5
-  * Run HTML and CSS validators - v5
-  * "Final" refactors to Coffeescript - v6
-  * Introduce HTML templating system and make a Makefile - v6
-  * Fix up the directory structure - v6
-  * Minify the Javascript - v6
-
-### Meta
-  * Find and bring up to speed a collaborator - v7?
+This version switches to Bootstrap from the custom CSS, thus making the interface look nicer.  It
+might also spawn UX improvements, but the focus is replacing the custom CSS.
 
 
-# Overhaul Plan
+## v7 - User Experience Improvements
 
-The broad goal of the overhaul is to get the backend into a **simplified**, **more usable** state that approximates the final shape I would want it to take before handing it off to someone else.  (We're also going to start getting the frontend into shape, by switching to Bootstrap.)  The system should be stripped down to its core functionality, namely:
-  1. Collect and display people's registration information
-  1. Allow people to reserve rooms
-  1. Collect people's aid requests / contributions and display the amount due
-  1. Record and display payments, expenses, and adjustments; compute a financial summary
+  * Streamline the registration experience as much as possible
+  * More financial features, e.g. ready-made summary report(s) and accounting for HRSFANS advances
+  * Look into saving partial data or autosaving
+  * Improve error handling, especially if an API call crashes
+  * Refresh properly if an API call returns unauthorized
+  * Add an onbeforeunload handler
 
-We should seek the simplest implementation of this possible, with an eye towards letting anyone at all run registration, and any reasonable technical person (e.g. an undergraduate) maintain the system.
 
-## Groups
+## v8 - Build Process Overhaul and Technical Cleanup
 
-Group registrations need to support two different use cases:
-  1. A single person is registering a family, significant other, or guest.
-  1. Multiple people want to reserve rooms together.
+This has two major phases, with the common theme of improving the technical foundation.
 
-By recognizing the separate use cases, we can support group registrations in a simplified way (avoiding the whole authorization and email-sending mess):
-  * Each group consists of a person and possibly some number of *guests*.
-  * The guests aren't users, and shouldn't expect to log in and see themselves.  The group pays together.
-  * Separately, it is possible to allow other users to reserve rooms for you, simply by entering the email address of the user into a field.
+### Build Process Overhaul
 
-Note that because we are allowing Google logins only, every user comes with a pre-verified email address!
+  * Make a Makefile
+  * Fix up the directory structure
+  * Minify the Javascript
+  * Look into npm or the like for dependencies
 
-There is a separate need for admins to view and edit registrations other than their own, but that should be as simple as giving them a dropdown where they can select a user to view.
+### Technical Cleanup
 
-## Financials
+  * Consider merging model.py and main.py
+  * Double-check the Python for warts
+  * Go over the CoffeeScript and reorganize as desired
+  * Check any custom CSS / HTML for warts
+  * Run HTML and CSS validators
+  * Investigate unit testing
 
-With the new group design it's reasonable to credit each payment to just one group, meaning that payments, expenses, and adjustments have the same structure.  They should not share a table, however, because they reflect totally different things: one is about money in and out, and the other is about changing the amount due.
 
-## Interface
+## v9 and Beyond - Documentation and Collaboration
 
-Registration should be a simple four-step process: enter your (group's) personal information; reserve your rooms; confirm; pay.  Conversely, the money parts of the interface should be designed to maximize interaction efficiency.
+  * Go over everything and make sure it's commented
+  * Finish the README
+  * Find a collaborator
+
+
+## Other Feature Requests (as needed)
+
+  * Privacy filter on reserved rooms
+  * Proper switch for closing registration
 

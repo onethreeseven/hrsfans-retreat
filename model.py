@@ -1,35 +1,31 @@
 '''
 Data model and associated utility functions.
 '''
-import logging
-import random
-import string
-import yaml
+from __future__ import unicode_literals
 
-from google.appengine.api import mail, users
+import logging
+import yaml
 from google.appengine.ext import ndb
 
 
 # This initializes some global data
 PARTY_DATA = yaml.load(open('data.yaml'))
-NIGHTS = {day['id'] for day in PARTY_DATA['days'][:-1]}
-# This is a map from bed IDs to the night IDs when each bed is available
-AVAILABLE_NIGHTS = {}
+AVAILABLE_NIGHTS = {}  # A map from bed IDs to the night IDs when each bed is available
 
-# Helper for normalize_party_data()
+# Helper for normalize_party_data(): ensure the objects' IDs are unique and do not contain |
 def _normalize_ids(l):
-    seen_ids = set()
+    ids = []
     for d in l:
         d['id'] = str(d['id'])
-        if '|' in d['id']:
-            raise RuntimeError('"|" found in ID.')
-        if d['id'] in seen_ids:
-            raise RuntimeError('Duplicate ID %r found.' % d['id'])
-        seen_ids.add(d['id'])
+        ids.append(d['id'])
+    if len(ids) != len(set(ids)):
+        raise RuntimeError('Duplicate ID found.')
+    if any('|' in _id for _id in ids):
+        raise RuntimeError('"|" found in ID.')
 
 def normalize_party_data():
     '''
-    Ensure that IDs are unique strings.
+    Ensure that IDs are unique strings; standardize types of room costs and set AVAILABLE_NIGHTS.
     '''
     _normalize_ids(PARTY_DATA['days'])
     _normalize_ids(PARTY_DATA['meals'])
@@ -37,8 +33,7 @@ def normalize_party_data():
     beds = []
     for group in PARTY_DATA['rooms'].itervalues():
         for room in group:
-            for bed in room['beds']:
-                beds.append(bed)
+            beds.extend(room['beds'])
     _normalize_ids(beds)
 
     for bed in beds:
@@ -46,181 +41,43 @@ def normalize_party_data():
         AVAILABLE_NIGHTS[bed['id']] = set(bed['costs'])
 
 normalize_party_data()
+NIGHTS = {day['id'] for day in PARTY_DATA['days'][:-1]}  # Set of available nights
+MEALS = {meal['id'] for meal in PARTY_DATA['meals']}
+
+# A generic key used only as an ancestor to enable global transactional queries
+PARTY_KEY = ndb.Key('Party', '.')
 
 
-class Party(ndb.Model):
+class APIError(Exception):
     '''
-    A party.
-
-    Party <party name>
+    Error class for errors that are "expected" and should be returned to the user.
     '''
-    # Doesn't actually store anything right now
-
-PARTY_KEY = ndb.Key(Party, '.')
 
 
-class User(ndb.Model):
+def _retrieve_many(cls, key_ids):
     '''
-    A user.
-
-    Party <party name>
-        User <federated identity>
+    Helper wrapper around ndb.get_multi(): returns a dictionary from key_ids to objects.
     '''
-    # Doesn't actually store anything right now
-
-
-class Authorization(ndb.Model):
-    '''
-    Authorization for a user to see a registration.
-
-    Party <party name>
-        User <federated identity>
-            Authorization <email>
-    '''
-    activated = ndb.BooleanProperty(required=True, default=False, indexed=False)
-    email_token = ndb.StringProperty()
-    user_nickname = ndb.StringProperty(required=True, indexed=False)
-
-    @classmethod
-    def add(cls, email, user, nickname, activate_immediately=False, respect_tombstone=False):
-        '''
-        Add the specified authorization and send email if necessary.
-        '''
-        if respect_tombstone:
-            if ndb.Key(User, user, AuthTombstone, email, parent=PARTY_KEY).get() is not None:
-                return
-
-        logging.info('Adding authorization: %r, %r', email, user)
-        authorization = cls.get_or_insert(
-            email,
-            parent=ndb.Key(User, user, parent=PARTY_KEY),
-            user_nickname=nickname,
-            activated=activate_immediately
-        )
-
-        # If told to activate immediately, this overwrites the previous state
-        if activate_immediately and not authorization.activated:
-            authorization.activated = True
-            authorization.put()
-
-        # This check saves a transaction
-        if not authorization.activated:
-            authorization.send_email_if_necessary()
-
-    @classmethod
-    def for_user(cls, user):
-        '''
-        Get the authorizations for this user.
-        '''
-        return cls.query(ancestor=ndb.Key(User, user, parent=PARTY_KEY)).fetch()
-
-    @classmethod
-    def is_authorized(cls, email, user):
-        '''
-        Report whether the given authorization exists and is activated.
-        '''
-        obj = cls.get_by_id(email, parent=ndb.Key(User, user, parent=PARTY_KEY))
-        return obj is not None and obj.activated
-
-    @classmethod
-    def process_token(cls, token):
-        '''
-        Activate the authorization with the given token.  Reports the number activated.
-        '''
-        processed = 0
-        for obj in cls.query(cls.email_token == token, ancestor=PARTY_KEY):
-            logging.info('Processing email token for authorization: %r, %r',
-                         obj.key.id(), obj.key.parent().id())
-            obj.activated = True
-            obj.email_token = None
-            obj.put()
-            processed += 1
-        return processed
-
-    @classmethod
-    def remove(cls, email, user):
-        '''
-        Remove the specified authorization if it exists.
-        '''
-        logging.info('Removing authorization: %r, %r', email, user)
-        ndb.Key(User, user, cls, email, parent=PARTY_KEY).delete()
-        AuthTombstone.get_or_insert(email, parent=ndb.Key(User, user, parent=PARTY_KEY))
-
-    @classmethod
-    def select_emails(cls, authorizations):
-        '''
-        Utility method to pull the authorized emails out of a list of Authorization objects.
-        '''
-        return {obj.key.id() for obj in authorizations if obj.activated}
-
-    def key_and_dict(self):
-        '''
-        Return a string from the object's key and a dict representation of the object.
-        '''
-        result = self.to_dict()
-        # Users can only see whether there is an email token, not (obviously) what it is
-        result['email_token'] = bool(result['email_token'])
-        return self.key.id(), result
-
-    EMAIL_BODY = '''Hi there!
-
-You're getting this email because someone wants to register you for a HRSFANS retreat.
-
-That person logged in with the following OpenID identifier:
-    %s
-...which may be more readable as their OpenID nickname:
-    %s
-
-If you would like to allow them to view and edit your registration, please go to:
-    https://hrsfansretreat.appspot.com/authorize?token=%s
-
-If you don't know who this person is, you can ignore this email, or complain to Andrew
-at onethreeseven@gmail.com.  Hopefully we don't have a spam problem!
-
-Cheers,
-The HRSFANS Retreat Team
-'''
-    @ndb.transactional
-    def send_email_if_necessary(self):
-        '''
-        Send a confirmation email if necessary.
-        '''
-        updated = self.key.get()
-        if updated is not None and not updated.activated and not updated.email_token:
-            token = ''.join(random.choice(string.letters) for i in xrange(40))
-            updated.email_token = token
-            updated.put()
-
-            email = self.key.id()
-            user = self.key.parent().id()
-            logging.info('Sending authorization email: %r, %r', email, user)
-            mail.send_mail(
-                sender='HRSFANS Retreat Registration <onethreeseven@gmail.com>',
-                to=email,
-                subject='HRSFANS Retreat Registration Authorization Request',
-                body=self.EMAIL_BODY % (user, self.user_nickname, token)
-            )
+    keys = [ndb.Key(cls, key_id, parent=PARTY_KEY) for key_id in key_ids]
+    return {obj.key.id(): obj for obj in ndb.get_multi(keys) if obj is not None}
 
 
 class Registration(ndb.Model):
     '''
-    A registration.
-
-    Party <party name>
-        Registration <email>
+    A registration.  The key is the registrant's display name.
     '''
+    # Identifying data - these are strings, not text, so they are indexed
+    email = ndb.StringProperty()
+    group = ndb.StringProperty(required=True)
+
     # Core system data
     confirmed = ndb.BooleanProperty(required=True, default=False, indexed=False)
-    # {id: 'yes' | 'no' | 'maybe'}
-    meals = ndb.JsonProperty(required=True, default={}, compressed=True)
-    name = ndb.TextProperty(required=True, default='')
-    # {id: 'yes' | 'no'}
-    nights = ndb.JsonProperty(required=True, default={}, compressed=True)
+    meals = ndb.JsonProperty(required=True, default={})
+    nights = ndb.JsonProperty(required=True, default={})
 
     # Personal data
     children = ndb.TextProperty(required=True, default='')
     dietary = ndb.TextProperty(required=True, default='')
-    driving = ndb.TextProperty(required=True, default='')
     emergency = ndb.TextProperty(required=True, default='')
     full_name = ndb.TextProperty(required=True, default='')
     guest = ndb.TextProperty(required=True, default='')
@@ -233,452 +90,324 @@ class Registration(ndb.Model):
     subsidy = ndb.FloatProperty(indexed=False)
 
     @classmethod
-    def create_or_save(cls, registration):
+    def group_for_user(cls, user):
         '''
-        Create or save the registration.  Does not validate the input!
+        Find the group that the user belongs to.  If the user is registered, this is the group of
+        that registration; otherwise it is the user itself.
         '''
-        logging.info('Creating or modifying registration: %r', registration)
-        obj = cls.get_or_insert(registration.pop('email'), parent=PARTY_KEY)
-        obj.populate(**registration)
-        obj.put()
+        # This shouldn't be possible, but bad things happen if we accidentally return None
+        if user is None:
+            raise RuntimeError('Attempted to look up the group for user = None.')
+        result = cls.query(cls.email == user, ancestor=PARTY_KEY).get()
+        return result.group if result is not None else user
 
     @classmethod
-    def for_emails(cls, emails):
+    @ndb.transactional()
+    def create(cls, name, email, group):
         '''
-        Utility method: get all the Registration objects for the given emails.
+        Create a registration, guarding against data inconsistencies.
+
+        Two rules are enforced:
+          * There must not already be a registration with the same name or email.
+          * If the email already exists as a group name, the specified group must be the same.
         '''
-        keys = [ndb.Key(Registration, email, parent=PARTY_KEY) for email in emails]
-        return [x for x in ndb.get_multi(keys) if x is not None]
+        logging.info('Creating registration: %r, %r (%r)', name, email, group)
+        if cls.get_by_id(name, parent=PARTY_KEY) is not None:
+            raise APIError('A registration with this name already exists.')
+        if email:
+            if cls.query(cls.email == email, ancestor=PARTY_KEY).count(limit=1):
+                raise APIError('A registration with this email address already exists.')
+            if email != group and cls.query(cls.group == email, ancestor=PARTY_KEY).count(limit=1):
+                raise APIError('A user with this email address has already registered a group.')
+        cls(parent=PARTY_KEY, id=name, email=email, group=group).put()
 
     @classmethod
-    def update(cls, registration):
+    def get_or_raise(cls, name, group=None):
         '''
-        Update the registration, raising LookupError if not present.
+        Get a registration or raise APIError  Optionally pass an expected group.
         '''
-        logging.info('Modifying registration: %r', registration)
-        obj = cls.get_by_id(registration.pop('email'), parent=PARTY_KEY)
-        if obj is None:
-            raise LookupError('Registration not found.')
+        obj = cls.get_by_id(name, parent=PARTY_KEY)
+        if obj is None or (group is not None and obj.group != group):
+            raise APIError('Failed to find registration.')
+        return obj
+
+    @classmethod
+    def delete(cls, name, group):
+        '''
+        Delete a registration.
+        '''
+        obj = cls.get_or_raise(name, group=group)
+        logging.info('Deleting registration: %r', obj.to_dict())
+        obj.key.delete()
+
+    @classmethod
+    def update(cls, registration, group):
+        '''
+        Update a registration.
+        '''
+        if 'email' in registration or 'group' in registration:
+            raise APIError("A registration's email and group are immutable.")
+
+        logging.info('Modifying registration: %r (%r)', registration, group)
+        obj = cls.get_or_raise(registration.pop('name'), group=group)
         obj.populate(**registration)
+
+        if not any(obj.nights.itervalues()):
+            raise APIError('No nights selected.')
+        if not NIGHTS.issuperset(obj.nights):
+            raise APIError('Invalid night selected.')
+        if not MEALS.issuperset(obj.meals):
+            raise APIError('Invalid meal selected.')
+        if not (obj.emergency and obj.full_name and obj.phone):
+            raise APIError('Missing mandatory field.')
+        if obj.confirmed and (obj.aid is None or obj.subsidy is None):
+            raise APIError('Missing mandatory field.')
+
         obj.put()
-
-    def anon_dict(self):
-        '''
-        Return a dict representation of the object for anonymous users.
-
-        Unlike most similar methods, this does not return the key ID (which is confidential).
-        '''
-        return self.to_dict(include=['name', 'nights'])
-
-    def key_and_dict(self):
-        '''
-        Return a string from the object's key and a dict representation of the object.
-        '''
-        return self.key.id(), self.to_dict()
-
-
-class AuthTombstone(ndb.Model):
-    '''
-    A record that an authorization was deleted, preventing it from being created automatically.
-
-    Party <party name>
-        User <federated identity>
-            Authorization <email>
-    '''
-    # Doesn't actually store anything right now
-
-
-class ReservationConflict(Exception):
-    '''
-    Exception used to signal that there was a conflict when attempting to save reservations.
-    '''
-    pass
 
 
 class Reservation(ndb.Model):
     '''
-    A room reservation.
-
-    Party <party name>
-        Reservation <night ID>|<room ID>
-
-    Note: several comments below mention an Ugly Conspiracy.  This refers to the fact that we don't
-    always enforce data consistency in reservations: if a user unregisters for a night, or a
-    registration is deleted, we should delete the relevant reservations, but we don't bother.
-    (If NDB supported foreign key constraints I might have done this differently.)
-
-    Instead, at all points where we interact with the reservation table, we inspect the registration
-    table and ignore any reservations that do not agree with the registrations.  In practice there
-    are only three such points: the one setter for reservations, and the two global getters.
+    A room reservation.  The key is <night ID>|<room ID>.
     '''
     registration = ndb.KeyProperty(kind=Registration, required=True)
 
     @classmethod
-    def filter_by_registrations(cls, reservations, registrations):
-        '''
-        Filter the given reservations to remove ones that do not agree with the given registrations.
-
-        This is used to implement the Ugly Conspiracy.
-        '''
-        nights_by_email = {reg.key: {k for k, v in reg.nights.iteritems() if v == 'yes'}
-                           for reg in registrations}
-
-        result = []
-        for res in reservations:
-            night, room = cls.split_key(res.key.id())
-            if night in nights_by_email.get(res.registration, ()):
-                result.append(res)
-        return result
-
-    @classmethod
-    @ndb.transactional(retries=5)
-    def process_request(cls, reservations, authorized_emails):
+    @ndb.transactional()
+    def process_request(cls, reservations, group):
         '''
         Process a reservation request from the client.
         '''
         # Note that, as you would expect, NDB aborts the transaction if we raise an exception.
-        logging.info('Beginning reservation transaction...')
+        logging.info('Beginning reservation transaction: %r (%r)', reservations, group)
 
-        # Get a cache of registrations
-        emails = {x for x in reservations.itervalues() if x}
-        reg_cache = {reg.key.id(): reg for reg in Registration.for_emails(emails)}
+        # Retrieve all the existing reservations and related registrations at once.
+        existing_reservations = _retrieve_many(cls, reservations)
+        new_names = {x for x in reservations.itervalues() if x}
+        existing_names = {res.registration.id() for res in existing_reservations.itervalues()}
+        registrations = _retrieve_many(Registration, new_names | existing_names)
 
-        # Attempt to set the reservations.  Boy, there are a lot of things to check...
-        for key, email in reservations.iteritems():
-            night, room = cls.split_key(key)
+        # Determine what to do, but do not actually write to the database
+        to_put = []
+        to_delete = []
+
+        for key, name in reservations.iteritems():
+            night, _, room = key.partition('|')
 
             # Is there an existing reservation that we're not allowed to overwrite?
-            res = cls.get_by_id(key, parent=PARTY_KEY)
-            if res is not None:
-                existing_email = res.registration.id()
-                if existing_email not in authorized_emails:
-                    # We have to check the registration, due to the Ugly Conspiracy
-                    if existing_email not in reg_cache:
-                        reg_cache[existing_email] = res.registration.get()
-                    existing_reg = reg_cache[existing_email]
-                    if existing_reg is not None and existing_reg.nights.get(night) == 'yes':
-                        raise ReservationConflict('One or more rooms has been taken.')
+            existing_res = existing_reservations.get(key)
+            if existing_res is not None:
+                existing_reg = registrations.get(existing_res.registration.id())
+                if existing_reg is not None and existing_reg.group != group:
+                    raise APIError('Room already reserved by someone outside the group.')
 
-            # If we've been asked to delete the reservation, we're clear to do that.
-            if not email:
-                if res is not None:
-                    logging.info('Attempting to delete reservation %s.', key)
-                    res.key.delete()
+            # Delete the reservation...
+            if not name:
+                if existing_res is not None:
+                    logging.info('Deleting reservation: %r', existing_res.to_dict())
+                    to_delete.append(existing_res.key)
 
-            # Otherwise...
+            # ... or create or modify it
             else:
-                # Is the user allowed to reserve a room for this registration?
-                if email not in authorized_emails:
-                    raise ReservationConflict("You don't have authorization for a reservation.")
-                # Is the room available that night?
-                if room not in AVAILABLE_NIGHTS or night not in AVAILABLE_NIGHTS[room]:
-                    raise ReservationConflict("Room is not available that night.")
-                # Is the attendee actually staying that night?
-                reg = reg_cache.get(email)
-                if reg is None or reg.nights.get(night) != 'yes':
-                    raise ReservationConflict("Attendee is not staying that night.")
-                # Okay, they're clear to reserve the room.
-                logging.info('Attempting to reserve %s for %r.', key, email)
-                if res is None:
-                    cls.get_or_insert(key, parent=PARTY_KEY, registration=reg.key)
-                else:
-                    res.registration = reg.key
-                    res.put()
+                # Normally NDB encodes everything in UTF-8 when necessary, but this key ID is being
+                # retrieved without ever passing it to NDB.  So we have to do it by hand.  :-(
+                reg = registrations.get(name.encode('utf-8'))
+                if reg is None or reg.group != group:
+                    raise APIError('Registration not found in the expected group.')
+                logging.info('Reserving %s for %r.', key, name)
+                to_put.append(cls(parent=PARTY_KEY, id=key, registration=reg.key))
 
-    @classmethod
-    def split_key(cls, k):
-        '''
-        Utility method to split a key string into the night and room.
-        '''
-        return k.split('|', 1)
-
-    def anon_dict(self, name_table):
-        '''
-        Return a dict representation of the object for anonymous users.
-
-        Unlike most similar methods, this requires a table mapping registration keys to names.
-        '''
-        result = self.to_dict()
-        result['registration'] = name_table.get(result['registration'])
-        return self.key.id(), result
-
-    def key_and_dict(self):
-        '''
-        Return a string from the object's key and a dict representation of the object.
-        '''
-        result = self.to_dict()
-        result['registration'] = result['registration'].id()
-        return self.key.id(), result
+        # Write to the database all at once
+        if to_delete:
+            ndb.delete_multi(to_delete)
+        if to_put:
+            ndb.put_multi(to_put)
 
 
-class Payment(ndb.Model):
+class CreditGroup(ndb.Model):
     '''
-    A payment record.
-
-    Party <party name>
-        Payment <arbitrary ID>
+    A group of credits which are expected to sum to a recorded amount.  The key is an arbitrary ID.
+    (This is used to ensure that payments and expenses have been fully credited to registrations.)
     '''
     amount = ndb.FloatProperty(required=True, indexed=False)
     date = ndb.DateTimeProperty(required=True, auto_now_add=True, indexed=False)
-    from_whom = ndb.TextProperty(required=True, default='')
-    via = ndb.TextProperty(required=True, default='')
+    kind = ndb.StringProperty(required=True, indexed=False, choices=('payment', 'expense'))
+    details = ndb.JsonProperty(required=True, default={})
 
     @classmethod
-    @ndb.transactional
-    def delete_by_id(cls, pmt_id):
+    def get_or_raise(cls, credit_group_id):
         '''
-        Delete the given payment and any associated credits.
+        Get a credit group or raise APIError.
         '''
-        payment = cls.get_by_id(pmt_id, parent=PARTY_KEY)
-        if payment is None:
-            logging.warn('Failed to find payment (to delete) with id %r.', pmt_id)
-            raise RuntimeError('Failed to find payment.')
-
-        logging.info('Deleting payment: %r', payment.to_dict())
-        payment.delete_credits()
-        payment.key.delete()
+        obj = cls.get_by_id(credit_group_id, parent=PARTY_KEY)
+        if obj is None:
+            raise APIError('Failed to find credit group.')
+        return obj
 
     @classmethod
-    @ndb.transactional
-    def record_or_modify(cls, payment, credits, pmt_id=None):
+    @ndb.transactional()
+    def create_or_replace(cls, credit_group, credits, credit_group_id=None):
         '''
-        Record or modify a payment.
+        Create or replace a credit group.  Note that if a previous credit group is passed, it is
+        deleted rather than modified in place; however, its date is preserved.
         '''
-        # Get the previous payment if requested
-        if pmt_id is not None:
-            pmt_obj = cls.get_by_id(pmt_id, parent=PARTY_KEY)
-            if pmt_obj is None:
-                logging.warn('Failed to find payment (to modify) with id %r.', pmt_id)
-                raise RuntimeError('Failed to find payment.')
-            logging.info('Modifying payment: %r', pmt_obj.to_dict())
-            pmt_obj.delete_credits()
-        else:
-            logging.info('Creating new payment.')
-            pmt_obj = cls(parent=PARTY_KEY)
+        # Determine what to do; we have to save the group object once so it has a key
+        logging.info('Saving new credit group: %r' % credit_group)
+        obj = cls(parent=PARTY_KEY, **credit_group)
+        obj.put()
 
-        logging.info('Saving new payment data: %r', payment)
-        pmt_obj.populate(**payment)
-        pmt_obj.put()
-
-        emails = {credit['email'] for credit in credits}
-        registrations = {reg.key.id(): reg for reg in Registration.for_emails(emails)}
-
+        to_put = [obj]
         for credit in credits:
-            reg = registrations.get(credit['email'])
-            if reg is None:
-                logging.warn('Failed to find registration for credit: %r', credit['email'])
-                raise RuntimeError('Failed to find registration.')
-            if not reg.confirmed:
-                logging.warn('Registration for credit has not been confirmed: %r', credit['email'])
-                raise RuntimeError('Registration has not been confirmed.')
+            credit['credit_group'] = obj.key
+            to_put.append(Credit._create_or_update(credit))
 
-            logging.info('Saving new credit data: %r' % credit)
-            Credit(parent=pmt_obj.key, amount=credit['amount'], registration=reg.key).put()
+        # If requested, get the previous credit group, extract its date, and delete it
+        if credit_group_id is not None:
+            replaced = cls.get_or_raise(credit_group_id)
+            logging.info('Replaced credit group: %r', replaced.to_dict())
+            for obj in to_put:
+                obj.date = replaced.date  # Both Credits and CreditGroups use "date" for this field
+            replaced.key.delete()
 
-    def delete_credits(self):
+        # Write to the database all at once
+        ndb.put_multi(to_put)
+
+    @classmethod
+    def delete(cls, credit_group_id):
         '''
-        Helper method for the delete and modify methods; deletes all credits for this payment.
+        Delete the credit group with the given ID.
         '''
-        keys = Credit.query(ancestor=self.key).fetch(keys_only=True)
-        logging.info('Deleting %d credits for payment.', len(keys))
-        for key in keys:
-            key.delete()
+        obj = cls.get_or_raise(credit_group_id)
+        logging.info('Deleting credit group: %r', obj.to_dict())
+        obj.key.delete()
 
-    def key_and_dict(self):
-        '''
-        Return an int from the object's key and a dict representation of the object.
-        '''
-        result = self.to_dict()
-        result['date'] = result['date'].strftime('%Y-%m-%d %H:%M:%S')
-        return self.key.id(), result
-
-
-# Note: as with the Reservations, we hide some data inconsistency with Credits and Expenses.
-# Nominally, only confirmed registrations can have credits or expenses attached; however, because
-# NDB doesn't support foreign key constraints, we handle this by filterng out unconfirmed
-# registrations in the getters and setters.  We refer to this as the Little Conspiracy.
 
 class Credit(ndb.Model):
     '''
-    A credit record.
-
-    Party <party name>
-        Payment <arbitrary ID>
-            Credit <arbitrary ID>
+    A credit record.  The key is an arbitrary ID.
     '''
     amount = ndb.FloatProperty(required=True, indexed=False)
+    category = ndb.TextProperty(required=True, default='')
+    credit_group = ndb.KeyProperty(kind=CreditGroup)
     date = ndb.DateTimeProperty(required=True, auto_now_add=True, indexed=False)
-    registration = ndb.KeyProperty(kind=Registration)
-
-    def expanded_dict(self):
-        '''
-        Return a dict representation of the object.
-        '''
-        result = self.to_dict()
-        result['date'] = result['date'].strftime('%Y-%m-%d')
-        result['payment_id'] = self.key.parent().id()
-        result['registration'] = result['registration'].id()
-        return result
-
-
-class Expense(ndb.Model):
-    '''
-    An expense record.
-
-    Party <party name>
-        Expense <arbitrary ID>
-    '''
-    amount = ndb.FloatProperty(required=True, indexed=False)
-    categories = ndb.JsonProperty(required=True, default={}, compressed=True)
-    date = ndb.DateTimeProperty(required=True, auto_now_add=True, indexed=False)
-    description = ndb.TextProperty(required=True)
-    registration = ndb.KeyProperty(kind=Registration)
+    registration = ndb.KeyProperty(kind=Registration, required=True)
 
     @classmethod
-    def delete_by_id(cls, exp_id):
+    def get_or_raise(cls, credit_id):
         '''
-        Delete the given expense.
+        Get a credit or raise APIError.
         '''
-        expense = cls.get_by_id(exp_id, parent=PARTY_KEY)
-        if expense is None:
-            logging.warn('Failed to find expense (to delete) with id %r.', exp_id)
-            raise RuntimeError('Failed to find expense.')
-        logging.info('Deleting expense: %r', expense.to_dict())
-        expense.key.delete()
+        obj = cls.get_by_id(credit_id, parent=PARTY_KEY)
+        if obj is None:
+            raise APIError('Failed to find credit.')
+        return obj
 
     @classmethod
-    def record_or_modify(cls, expense, exp_id=None):
+    def _create_or_update(cls, credit, credit_id=None):
         '''
-        Record or modify an expense.
+        Shared code for create_or_update() and CreditGroup.create_or_replace() returning an entity.
         '''
-        # Get the previous expense if requested
-        if exp_id is not None:
-            exp_obj = cls.get_by_id(exp_id, parent=PARTY_KEY)
-            if exp_obj is None:
-                logging.warn('Failed to find expense (to modify) with id %r.', pmt_id)
-                raise RuntimeError('Failed to find expense.')
-            logging.info('Modifying expense: %r', exp_obj.to_dict())
+        # Get the previous credit if requested
+        if credit_id is not None:
+            obj = cls.get_or_raise(credit_id)
+            logging.info('Modifying credit: %r', obj.to_dict())
         else:
-            logging.info('Creating new expense.')
-            exp_obj = cls(parent=PARTY_KEY)
+            obj = cls(parent=PARTY_KEY)
 
-        email = expense.pop('email')
-        reg = Registration.get_by_id(email, parent=PARTY_KEY)
-        if reg is None:
-            logging.warn('Failed to find registration for expense: %r', email)
-            raise RuntimeError('Failed to find registration.')
-        if not reg.confirmed:
-            logging.warn('Registration for expense has not been confirmed: %r', email)
-            raise RuntimeError('Registration has not been confirmed.')
-        if abs(sum(expense['categories'].itervalues()) - expense['amount']) > 0.005:
-            logging.warn('Incosistent categorized amounts: %r', expense)
-            raise RuntimeError('Sum of categorized amounts not equal to amount.')
+        # Get the registration and return
+        name = credit.pop('name')
+        reg = Registration.get_or_raise(name)
+        logging.info('Saving credit: %r, %r', name, credit)
+        obj.populate(registration=reg.key, **credit)
+        return obj
 
-        logging.info('Saving new expense data: %r, %r', email, expense)
-        exp_obj.populate(registration=reg.key, **expense)
-        exp_obj.put()
-
-    def key_and_dict(self):
+    @classmethod
+    def create_or_update(cls, *args, **kwargs):
         '''
-        Return an int from the object's key and a dict representation of the object.
+        Create or update a credit.
         '''
-        result = self.to_dict()
-        result['date'] = result['date'].strftime('%Y-%m-%d')
-        result['registration'] = result['registration'].id()
-        return self.key.id(), result
+        cls._create_or_update(*args, **kwargs).put()
+
+    @classmethod
+    def delete(cls, credit_id):
+        '''
+        Delete the credit with the given ID.
+        '''
+        obj = cls.get_or_raise(credit_id)
+        logging.info('Deleting credit: %r', obj.to_dict())
+        obj.key.delete()
 
 
-def general_data():
+@ndb.transactional()
+def all_data(group=None):
     '''
-    Data everyone needs.
+    Data for return to the user.  If group is None, all data is returned; otherwise, filters are
+    applied appropriate to a non-admin user in the given group.  Additionally, consistency checks
+    are applied (and saved to the database if necessary).
     '''
-    return {
-        'party_data': PARTY_DATA
-    }
+    # Retrieve all the data simultaneously
+    classes = (Registration, Reservation, CreditGroup, Credit)
+    futures = [c.query(ancestor=PARTY_KEY).fetch_async() for c in classes]
+    registrations, reservations, credit_groups, credits = [f.get_result() for f in futures]
 
+    # Build the result, deleting inconsistent objects
+    result = {}
+    authorized_reg_keys = {reg.key for reg in registrations if group is None or reg.group == group}
 
-# Helper constant for admin_data()
-_CLASSES = (
-    ('registrations', Registration),
-    ('reservations', Reservation),
-    ('payments', Payment),
-    ('credits', Credit),
-    ('expenses', Expense)
-)
+    # Registrations
+    reg_dicts = {}
+    for reg in registrations:
+        if reg.key in authorized_reg_keys:
+            reg_dict = reg.to_dict()
+        else:
+            # Non-group-members can only see the nights (and name)
+            reg_dict = {'nights': reg.nights}
+        reg_dicts[reg.key.id()] = reg_dict
+    result['registrations'] = reg_dicts
 
-def admin_data():
-    '''
-    Data for admins.
-    '''
-    # Run the queries simultaneously
-    futures = [(k, cls.query(ancestor=PARTY_KEY).fetch_async()) for k, cls in _CLASSES]
-    results = {k: f.get_result() for k, f in futures}
+    # Reservations
+    reg_nights = {reg.key: reg.nights for reg in registrations}
+    res_dict = {}
+    for res in reservations:
+        res_id = res.key.id()
+        night, _, room = res_id.partition('|')
+        registered = res.registration in reg_nights and reg_nights[res.registration].get(night)
+        available = room in AVAILABLE_NIGHTS and night in AVAILABLE_NIGHTS[room]
+        if not (registered and available):
+            name = res.registration.id()
+            logging.info('Deleting inconsistent reservation of %s for %r.', res_id, name)
+            res.key.delete()
+        else:
+            res_dict[res_id] = res.registration.id()
+    result['reservations'] = res_dict
 
-    # Implement the Ugly Conspiracy
-    results['reservations'] = Reservation.filter_by_registrations(results['reservations'],
-                                                                  results['registrations'])
+    # Credits
+    cg_keys = {credit_group.key for credit_group in credit_groups}
+    credit_dicts = {}
+    for credit in credits:
+        cg = credit.credit_group
+        if credit.registration not in reg_nights or (cg is not None and cg not in cg_keys):
+            logging.info('Deleting inconsistent credit: %r', credit.to_dict())
+            credit.key.delete()
+        elif credit.registration in authorized_reg_keys:
+            credit_dict = credit.to_dict()
+            credit_dict['name'] = credit_dict.pop('registration').id()
+            if group is not None:
+                # Only admins receive credit groups
+                del credit_dict['credit_group']
+            elif credit_dict['credit_group'] is not None:
+                credit_dict['credit_group'] = credit_dict['credit_group'].id()
+            credit_dict['date'] = credit_dict['date'].strftime('%Y-%m-%d %H:%M')
+            credit_dicts[credit.key.id()] = credit_dict
+    result['credits'] = credit_dicts
 
-    # Implement the Little Conspiracy
-    conf_keys = {obj.key for obj in results['registrations'] if obj.confirmed}
-    results['credits'] = [obj for obj in results['credits'] if obj.registration in conf_keys]
-    results['expenses'] = [obj for obj in results['expenses'] if obj.registration in conf_keys]
+    # Credit groups; only admins see credit groups, but for convenience the field always exists
+    cg_dicts = {}
+    if group is None:
+        cg_dicts = {cg.key.id(): cg.to_dict() for cg in credit_groups}
+        for cg in cg_dicts.itervalues():
+            cg['date'] = cg['date'].strftime('%Y-%m-%d %H:%M')
+    result['credit_groups'] = cg_dicts
 
-    # Build the result
-    data = {
-        'registrations': dict(obj.key_and_dict() for obj in results['registrations']),
-        'reservations': dict(obj.key_and_dict() for obj in results['reservations']),
-        'payments': dict(obj.key_and_dict() for obj in results['payments']),
-        'credits': [obj.expanded_dict() for obj in results['credits']],
-        'expenses': dict(obj.key_and_dict() for obj in results['expenses'])
-    }
-
-    return {'data': data}
-
-
-def data_for_user(user):
-    '''
-    User data; pass the user's federated identity.
-    '''
-    # Launch large queries
-    all_reg_future = Registration.query(ancestor=PARTY_KEY).fetch_async()
-    all_res_future = Reservation.query(ancestor=PARTY_KEY).fetch_async()
-
-    # Get the authorizations and registrations
-    authorizations = Authorization.for_user(user)
-    authorized_emails = Authorization.select_emails(authorizations)
-    all_registrations = all_reg_future.get_result()
-    registrations = [obj for obj in all_registrations if obj.key.id() in authorized_emails]
-
-    # Get the credits and expenses, accounting for the Little Conspiracy
-    conf_keys = [obj.key for obj in registrations if obj.confirmed]
-    # App Engine refuses to run trivial queries
-    if conf_keys:
-        credits = Credit.query(Credit.registration.IN(conf_keys), ancestor=PARTY_KEY).fetch()
-        expenses = Expense.query(Expense.registration.IN(conf_keys), ancestor=PARTY_KEY).fetch()
-    else:
-        credits = []
-        expenses = []
-
-    # Build the name table
-    name_table = {obj.key: obj.name for obj in all_registrations}
-
-    # Implement the Ugly Conspiracy; select the reservations for this user
-    all_reservations = all_res_future.get_result()
-    all_reservations = Reservation.filter_by_registrations(all_reservations, all_registrations)
-    reservations = [res for res in all_reservations if res.registration.id() in authorized_emails]
-
-    # Build the result
-    anon_data = {
-        'registrations': [obj.anon_dict() for obj in all_registrations if obj.confirmed],
-        'reservations': dict(obj.anon_dict(name_table) for obj in all_reservations)
-    }
-    user_data = {
-        'authorizations': dict(obj.key_and_dict() for obj in authorizations),
-        'registrations': dict(obj.key_and_dict() for obj in registrations),
-        'reservations': dict(obj.key_and_dict() for obj in reservations),
-        'credits': [obj.expanded_dict() for obj in credits],
-        'expenses': dict(obj.key_and_dict() for obj in expenses)
-    }
-
-    return {'user_data': user_data, 'anon_data': anon_data}
+    return result
 
