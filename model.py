@@ -4,6 +4,7 @@ Data model and associated utility functions.
 from __future__ import unicode_literals
 
 import logging
+import time
 import yaml
 from google.appengine.ext import ndb
 
@@ -28,7 +29,6 @@ def normalize_party_data():
     Ensure that IDs are unique strings; standardize types of room costs and set AVAILABLE_NIGHTS.
     '''
     _normalize_ids(PARTY_DATA['days'])
-    _normalize_ids(PARTY_DATA['meals'])
 
     beds = []
     for group in PARTY_DATA['rooms'].itervalues():
@@ -42,7 +42,6 @@ def normalize_party_data():
 
 normalize_party_data()
 NIGHTS = {day['id'] for day in PARTY_DATA['days'][:-1]}  # Set of available nights
-MEALS = {meal['id'] for meal in PARTY_DATA['meals']}
 
 # A generic key used only as an ancestor to enable global transactional queries
 PARTY_KEY = ndb.Key('Party', '.')
@@ -72,7 +71,6 @@ class Registration(ndb.Model):
 
     # Core system data
     confirmed = ndb.BooleanProperty(required=True, default=False, indexed=False)
-    meals = ndb.JsonProperty(required=True, default={})
     nights = ndb.JsonProperty(required=True, default={})
 
     # Personal data
@@ -124,7 +122,7 @@ class Registration(ndb.Model):
     @classmethod
     def get_or_raise(cls, name, group=None):
         '''
-        Get a registration or raise APIError  Optionally pass an expected group.
+        Get a registration or raise APIError.  Optionally pass an expected group.
         '''
         obj = cls.get_by_id(name, parent=PARTY_KEY)
         if obj is None or (group is not None and obj.group != group):
@@ -156,8 +154,6 @@ class Registration(ndb.Model):
             raise APIError('No nights selected.')
         if not NIGHTS.issuperset(obj.nights):
             raise APIError('Invalid night selected.')
-        if not MEALS.issuperset(obj.meals):
-            raise APIError('Invalid meal selected.')
         if not (obj.emergency and obj.full_name and obj.phone):
             raise APIError('Missing mandatory field.')
         if obj.confirmed and (obj.aid is None or obj.subsidy is None):
@@ -397,7 +393,7 @@ def all_data(group=None):
                 del credit_dict['credit_group']
             elif credit_dict['credit_group'] is not None:
                 credit_dict['credit_group'] = credit_dict['credit_group'].id()
-            credit_dict['date'] = credit_dict['date'].strftime('%Y-%m-%d %H:%M')
+            credit_dict['date'] = time.mktime(credit_dict['date'].timetuple())
             credit_dicts[credit.key.id()] = credit_dict
     result['credits'] = credit_dicts
 
@@ -406,7 +402,7 @@ def all_data(group=None):
     if group is None:
         cg_dicts = {cg.key.id(): cg.to_dict() for cg in credit_groups}
         for cg in cg_dicts.itervalues():
-            cg['date'] = cg['date'].strftime('%Y-%m-%d %H:%M')
+            cg['date'] = time.mktime(cg['date'].timetuple())
     result['credit_groups'] = cg_dicts
 
     return result

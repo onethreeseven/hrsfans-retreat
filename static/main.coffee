@@ -9,6 +9,13 @@ _.mixin dollars: (x, precision = 2, blank_zero = false) ->
         val = '(' + val + ')'
     val
 
+# Mixins for standard date formats
+_.mixin short_date: (t) ->
+    moment(t * 1000).format("MMM D")
+
+_.mixin long_date: (t) ->
+    moment(t * 1000).format("YYYY-MM-DD HH:mm")
+
 # Choose among the options by the sign of the value; accepts a range around zero to handle rounding
 choose_by_sign = (val, pos, neg, zero) =>
     if val > 0.005
@@ -46,8 +53,10 @@ class PageModel
     # Constructor
     constructor: ->
         # Initialize data
-        $.ajax(url: 'call/init', async: false)
-            .done ({ @is_admin, @logout_url, @party_data, @server_data, @username }) =>
+        req = new XMLHttpRequest()
+        req.open('GET', 'call/init', false)
+        req.send()
+        { @is_admin, @logout_url, @party_data, @server_data, @username } = JSON.parse req.response
 
         # Variables backing the group selector
         @all_groups = ko.observable []
@@ -79,7 +88,7 @@ class PageModel
                 @credits = new Credits this
                 @registrations = new Registrations this
                 @financials = new Financials this
-                @meals = new Meals this
+                @dietary_info = new DietaryInfo this
                 @other_info = new OtherInfo this
                 @email_list = new EmailList this
                 @phone_list = new PhoneList this
@@ -90,11 +99,18 @@ class PageModel
 
     # Post method; pass the endpoint and the message to post
     post_json: (url, message) =>
-        $.post(url, { message: JSON.stringify(message), group: @selected_group() })
-            .done ({ @server_data, error }) =>
-                @reset()
-                if error
-                    window.alert(error + '  (If you think this is a bug, please let us know.)')
+        data = new FormData()
+        data.append('message', JSON.stringify message)
+        data.append('group', @selected_group())
+
+        req = new XMLHttpRequest()
+        req.open('POST', url, false)
+        req.send data
+        { @server_data, error } = JSON.parse req.response
+
+        @reset()
+        if error
+            window.alert(error + '  (If you think this is a bug, please let us know.)')
 
     # Postprocess data after retrieval from the server and reset the sections
     reset: =>
@@ -136,15 +152,6 @@ class PageModel
                     category: 'Rooms: Independent Arrangements'
                     date: null
 
-        # Meal charges
-        for name, reg of @server_data.registrations
-            meals = 0
-            for meal in @party_data.meals
-                if reg.meals? and reg.meals[meal.id]
-                    meals += meal.cost
-            if meals
-                reg.credits.push { amount: -meals, category: 'Meals', date: null }
-
         # Aid and subsidy charges
         for name, reg of @server_data.registrations
             if reg.aid
@@ -179,14 +186,11 @@ class PageModel
         # Set up a particularly useful sorted table
         @regs_by_name _.sortBy(_.values(@server_data.registrations), (x) -> x.name.toLowerCase())
 
-        # Determine the group names; for non-admins, reset the selected group, else just refresh
+        # Determine the group names and reset the selected group
         groups = (reg.group for reg in @regs_by_name() when reg.group?)
         groups.push @server_data.group
         @all_groups _.sortBy(_.uniq(groups), (x) -> x.toLowerCase())
-        if @is_admin and @selected_group()
-            @selected_group_sub()
-        else
-            @selected_group @server_data.group
+        @selected_group @server_data.group
 
     # Refresh handler for things depending on the selected group
     selected_group_sub: (group) =>
@@ -215,13 +219,9 @@ class Section
         @status = ko.computed(@get_status).extend(throttle: 25)
         @status_for_selector = ko.computed @get_status_for_selector
 
-    # Shared function: can this section be made visible?
-    can_set_visible: =>
-        @parent.visible_section()?.status() != 'changed' and @status() != 'disabled'
-
     # Attempt to make this section visible
     try_set_visible: =>
-        if @can_set_visible()
+        if @status() != 'disabled'
             @parent.visible_section this
         true  # This allows click events to pass through, e.g. to checkboxes
 
@@ -234,7 +234,7 @@ class Section
         result = @status()
         if @parent.visible_section() == this
             result += ' section_selected'
-        else if @can_set_visible()
+        else if @status() != 'disabled'
             result += ' pointer'
         result
 
@@ -261,6 +261,10 @@ class Register extends Section
             @sections.push new EditRegistration(@parent, this, reg)
 
         @add_registration.reset()
+
+        # Set a default email, but only on initial load
+        if @parent.group_regs_by_name().length == 0
+            @add_registration.email @parent.server_data.group
 
         # Select the earliest non-good section
         dodge_throttle =>
@@ -309,9 +313,6 @@ class EditRegistration extends Section
         @nights = {}
         for night in page.nights
             @nights[night.id] = ko.observable()
-        @meals = {}
-        for meal in page.party_data.meals
-            @meals[meal.id] = ko.observable()
         @emergency = ko.observable()
         @dietary = new OptionalEntry()
         @medical = new OptionalEntry()
@@ -330,8 +331,6 @@ class EditRegistration extends Section
         @phone @server_reg?.phone
         for id, obs of @nights
             obs @server_reg.nights[id]
-        for id, obs of @meals
-            obs @server_reg.meals[id]
         @emergency @server_reg?.emergency
         @dietary.reset @server_reg?.dietary
         @medical.reset @server_reg?.medical
@@ -345,10 +344,6 @@ class EditRegistration extends Section
             return 'changed'
         for id, obs of @nights
             server_val = @server_reg.nights[id]
-            if (obs() and not server_val) or (not obs() and server_val)
-                return 'changed'
-        for id, obs of @meals
-            server_val = @server_reg.meals[id]
             if (obs() and not server_val) or (not obs() and server_val)
                 return 'changed'
         if not eq(@emergency(), @server_reg?.emergency)
@@ -371,16 +366,12 @@ class EditRegistration extends Section
         nights = {}
         for id, obs of @nights
             nights[id] = obs()
-        meals = {}
-        for id, obs of @meals
-            meals[id] = obs()
 
         message =
             name: @server_reg.name
             full_name: @full_name()
             phone: @phone()
             nights: nights
-            meals: meals
             emergency: @emergency()
             dietary: @dietary.value()
             medical: @medical.value()
@@ -803,7 +794,7 @@ class CreditGroupBase extends Section
         if @selected()? or @edit_amount()
             return 'changed'
         for cg in @data()
-            if cg.unallocated
+            if Math.abs(cg.unallocated) > 0.005
                 return 'error'
         'good'
 
@@ -1079,7 +1070,7 @@ class Registrations extends Section
     label: 'Registrations'
 
     # The prefixes to total by
-    total_by: ['Rooms', 'Meals', 'Financial', 'Transport', 'Payment / Refund', 'Expense', 'Other']
+    total_by: ['Rooms', 'Financial', 'Transport', 'Payment / Refund', 'Expense', 'Other']
 
     # Overridden methods
     constructor: (parent) ->
@@ -1133,22 +1124,23 @@ class Registrations extends Section
 class Financials extends Section
     label: 'Financials'
 
-    # A table of the credit categories for each section
+    # A table of the credit categories for each section; sections starting with * are hidden
     surplus_categories: [
         ['General Fund', [
             'Rooms'
             'Rooms: Independent Arrangements'
             'Expense: Houses / Hotels'
+            'Expense: Meals'
             'Expense: Snacks'
             'Expense: Supplies'
             'Expense: Other'
+            'Adjustment: Meals'
             'Adjustment: Rooms'
             'Adjustment: Other'
         ]]
-        ['Meals', ['Meals', 'Expense: Meals', 'Adjustment: Meals']]
         ['Financial Assistance', ['Financial Assistance']]
         ['Transport Subsidy', ['Transport Subsidy']]
-        ['Net Payments*', ['Payment / Refund']]
+        ['*Net Payments', ['Payment / Refund']]
         ['Other', ['Expense: Deposits', 'Donations']]
     ]
     signed_categories: ['Financial Assistance', 'Transport Subsidy']
@@ -1206,7 +1198,8 @@ class Financials extends Section
                     delete surpluses_normal[category]
                     values.push { category, amount }
                     total += amount
-            data.push { group, values, total }
+            if not /^\*/.test group
+                data.push { group, values, total }
         # File any unprocessed categories in the last group.  We assume all signed categories are
         # properly in a group (since that can be verified by simple inspection)
         for category, amount of surpluses_normal
@@ -1219,25 +1212,9 @@ class Financials extends Section
         choose_by_sign(due, 'bg_green', 'bg_red', 'bg_gray')
 
 
-# Admin section: meals table
-class Meals extends Section
-    label: 'Meals'
-
-    # Overridden methods
-    constructor: (parent) ->
-        @counts = ko.observable {}
-
-        super parent
-
-    reset: =>
-        counts = {}
-        for meal in @parent.party_data.meals
-            counts[meal.id] = 0
-        for reg in @parent.regs_by_name()
-            for id, choice of reg.meals
-                if choice
-                    counts[id] += 1
-        @counts counts
+# Admin section: dietary information list
+class DietaryInfo extends Section
+    label: 'Dietary'
 
 
 # Admin section: other information list
@@ -1271,5 +1248,8 @@ class EmailList extends Section
 
 
 # Bind the model
-$(document).ready =>
-    ko.applyBindings new PageModel()
+bind = => ko.applyBindings new PageModel()
+if document.readyState != 'loading'
+    bind()
+else
+    document.addEventListener('DOMContentLoaded', bind)

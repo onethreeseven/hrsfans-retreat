@@ -5,9 +5,6 @@
 This version switches to React from Knockout.  It might cause minor user-visible improvements, but
 the focus is getting off Knockout (and hopefully simplifying the HTML and CoffeeScript).
 
-**NB**: I've deliberately avoided updating the Javascript libraries in v4, since we'll be upturning
-everything here anyway.  This version should definitely update jQuery and underscore.
-
 
 ## v6 - Bootstrap
 
