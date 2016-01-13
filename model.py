@@ -29,6 +29,7 @@ def normalize_party_data():
     Ensure that IDs are unique strings; standardize types of room costs and set AVAILABLE_NIGHTS.
     '''
     _normalize_ids(PARTY_DATA['days'])
+    _normalize_ids(PARTY_DATA['meals'])
 
     beds = []
     for group in PARTY_DATA['rooms'].itervalues():
@@ -42,6 +43,7 @@ def normalize_party_data():
 
 normalize_party_data()
 NIGHTS = {day['id'] for day in PARTY_DATA['days'][:-1]}  # Set of available nights
+MEALS = {meal['id'] for meal in PARTY_DATA['meals']}
 
 # A generic key used only as an ancestor to enable global transactional queries
 PARTY_KEY = ndb.Key('Party', '.')
@@ -71,6 +73,7 @@ class Registration(ndb.Model):
 
     # Core system data
     confirmed = ndb.BooleanProperty(required=True, default=False, indexed=False)
+    meals = ndb.JsonProperty(required=True, default={})
     nights = ndb.JsonProperty(required=True, default={})
 
     # Personal data
@@ -154,6 +157,8 @@ class Registration(ndb.Model):
             raise APIError('No nights selected.')
         if not NIGHTS.issuperset(obj.nights):
             raise APIError('Invalid night selected.')
+        if not MEALS.issuperset(obj.meals):
+            raise APIError('Invalid meal selected.')
         if not (obj.emergency and obj.full_name and obj.phone):
             raise APIError('Missing mandatory field.')
         if obj.confirmed and (obj.aid is None or obj.subsidy is None):

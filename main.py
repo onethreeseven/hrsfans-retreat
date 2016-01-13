@@ -5,16 +5,20 @@ from __future__ import unicode_literals
 
 import json
 import logging
-from google.appengine.api import users
+import time
 import webapp2
+from google.appengine.api import users
 
 import model
 from model import APIError
 
 
-# Helper function: assert that reservations are enabled
+# Helper functions for dealing with enabling reservations
+def _are_reservations_enabled():
+    return time.time() > model.PARTY_DATA['enable_reservations_after']
+
 def _assert_reservations_enabled():
-    if not model.PARTY_DATA['reservations_enabled'] and not users.is_current_user_admin():
+    if not _are_reservations_enabled() and not users.is_current_user_admin():
         raise APIError('Reservations not yet enabled.')
 
 
@@ -41,7 +45,7 @@ class Init(webapp2.RequestHandler):
         result = {
             'is_admin': users.is_current_user_admin(),
             'logout_url': users.create_logout_url('/'),
-            'party_data': model.PARTY_DATA,
+            'party_data': dict(model.PARTY_DATA, reservations_enabled=_are_reservations_enabled()),
             'server_data': _model_data(_group()),
             'username': users.get_current_user().email()
         }

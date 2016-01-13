@@ -88,6 +88,7 @@ class PageModel
                 @credits = new Credits this
                 @registrations = new Registrations this
                 @financials = new Financials this
+                @meals = new Meals this
                 @dietary_info = new DietaryInfo this
                 @other_info = new OtherInfo this
                 @email_list = new EmailList this
@@ -151,6 +152,15 @@ class PageModel
                     amount: -@party_data.independent_room_fee * reg.num_unreserved_nights
                     category: 'Rooms: Independent Arrangements'
                     date: null
+
+        # Meal charges
+        for name, reg of @server_data.registrations
+            meals = 0
+            for meal in @party_data.meals
+                if reg.meals? and reg.meals[meal.id]
+                    meals += meal.cost
+            if meals
+                reg.credits.push { amount: -meals, category: 'Meals', date: null }
 
         # Aid and subsidy charges
         for name, reg of @server_data.registrations
@@ -313,6 +323,9 @@ class EditRegistration extends Section
         @nights = {}
         for night in page.nights
             @nights[night.id] = ko.observable()
+        @meals = {}
+        for meal in page.party_data.meals
+            @meals[meal.id] = ko.observable()
         @emergency = ko.observable()
         @dietary = new OptionalEntry()
         @medical = new OptionalEntry()
@@ -331,6 +344,8 @@ class EditRegistration extends Section
         @phone @server_reg?.phone
         for id, obs of @nights
             obs @server_reg.nights[id]
+        for id, obs of @meals
+            obs @server_reg.meals[id]
         @emergency @server_reg?.emergency
         @dietary.reset @server_reg?.dietary
         @medical.reset @server_reg?.medical
@@ -344,6 +359,10 @@ class EditRegistration extends Section
             return 'changed'
         for id, obs of @nights
             server_val = @server_reg.nights[id]
+            if (obs() and not server_val) or (not obs() and server_val)
+                return 'changed'
+        for id, obs of @meals
+            server_val = @server_reg.meals[id]
             if (obs() and not server_val) or (not obs() and server_val)
                 return 'changed'
         if not eq(@emergency(), @server_reg?.emergency)
@@ -366,12 +385,16 @@ class EditRegistration extends Section
         nights = {}
         for id, obs of @nights
             nights[id] = obs()
+        meals = {}
+        for id, obs of @meals
+            meals[id] = obs()
 
         message =
             name: @server_reg.name
             full_name: @full_name()
             phone: @phone()
             nights: nights
+            meals: meals
             emergency: @emergency()
             dietary: @dietary.value()
             medical: @medical.value()
@@ -987,7 +1010,7 @@ class Expenses extends CreditGroupBase
 
 # Admin section: credits
 class Credits extends Section
-    label: 'Other Credits'
+    label: 'Misc Credits'
 
     # Overridden methods
     constructor: (parent) ->
@@ -1070,7 +1093,7 @@ class Registrations extends Section
     label: 'Registrations'
 
     # The prefixes to total by
-    total_by: ['Rooms', 'Financial', 'Transport', 'Payment / Refund', 'Expense', 'Other']
+    total_by: ['Rooms', 'Meals', 'Financial', 'Transport', 'Payment / Refund', 'Expense', 'Other']
 
     # Overridden methods
     constructor: (parent) ->
@@ -1129,19 +1152,19 @@ class Financials extends Section
         ['General Fund', [
             'Rooms'
             'Rooms: Independent Arrangements'
+            'Meals'
+            'Donations'
             'Expense: Houses / Hotels'
-            'Expense: Meals'
-            'Expense: Snacks'
-            'Expense: Supplies'
+            'Expense: Meals / Snacks / Supplies'
             'Expense: Other'
-            'Adjustment: Meals'
             'Adjustment: Rooms'
+            'Adjustment: Meals'
             'Adjustment: Other'
         ]]
         ['Financial Assistance', ['Financial Assistance']]
         ['Transport Subsidy', ['Transport Subsidy']]
         ['*Net Payments', ['Payment / Refund']]
-        ['Other', ['Expense: Deposits', 'Donations']]
+        ['Other', ['Expense: Deposits']]
     ]
     signed_categories: ['Financial Assistance', 'Transport Subsidy']
 
@@ -1210,6 +1233,27 @@ class Financials extends Section
     # Helpers for formatting
     total_style: (due) =>
         choose_by_sign(due, 'bg_green', 'bg_red', 'bg_gray')
+
+
+# Admin section: meals table
+class Meals extends Section
+    label: 'Meals'
+
+    # Overridden methods
+    constructor: (parent) ->
+        @counts = ko.observable {}
+
+        super parent
+
+    reset: =>
+        counts = {}
+        for meal in @parent.party_data.meals
+            counts[meal.id] = 0
+        for reg in @parent.regs_by_name()
+            for id, choice of reg.meals
+                if choice
+                    counts[id] += 1
+        @counts counts
 
 
 # Admin section: dietary information list

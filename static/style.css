@@ -46,6 +46,11 @@ h3 {
     font-size: 15px;
 }
 
+img {
+    display: block;
+    margin: 10px auto 10px;
+}
+
 table {
     border-collapse: collapse;
 }
@@ -284,7 +289,8 @@ td.reg_label {
     padding: 10px 10px 10px 0px;
 }
 
-.res_table, .pmt_table, .guest_list, .payment_records, .admin_reg_table, .phone_table {
+.res_table, .pmt_table, .guest_list, .payment_records, .admin_reg_table, .meals_table,
+.phone_table {
     margin-left: auto;
     margin-right: auto;
 }
@@ -294,7 +300,7 @@ td.reg_label {
     margin-bottom: 10px;
 }
 
-.admin_reg_table, .phone_table, .payment_records {
+.admin_reg_table, .meals_table, .phone_table, .payment_records {
     margin: 15px auto;
 }
 
@@ -361,6 +367,23 @@ select.payment_select_narrow {
 .payment_record_desc p {
     margin-bottom: 2px;
     margin-top: 2px;
+}
+
+.meal_summary {
+    font-weight: bold;
+}
+
+.meal_total {
+    text-align: right;
+}
+
+.meal_cell {
+    text-align: center;
+}
+
+.meal_cell, .meal_header_name, .meal_total {
+    width: 55px;
+    max-width: 55px;
 }
 
 .phone_table_separator {

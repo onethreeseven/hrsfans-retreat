@@ -8,7 +8,7 @@
     <script type='text/javascript' src='static/moment.min.js'></script>
     <script type='text/javascript' src='static/underscore-min.js'></script>
     <script type='text/javascript' src='static/main.js'></script>
-    <title>Winter Retreat 2016</title>
+    <title>Summer Retreat 2016</title>
 </head>
 
 <body>
@@ -167,6 +167,27 @@
                 </tr>
                 <tr class='reg_row'>
                     <td class='borderless reg_label'>
+                        I plan to eat the following meals: <br><br>(If you're not sure, please
+                        consider contributing to the meal fund anyway; we'll put your contribution
+                        to good use!  Otherwise, you can pay cash on site, as always.)
+                    </td>
+                    <td class='borderless'>
+                        <table class='reg_subtable'><tbody>
+                            <!-- ko foreach: $root.party_data.meals -->
+                            <tr class='bg_gray'>
+                                <td class='cell_label_medium' data-bind='text: name'></td>
+                                <td class='cell_cost' data-bind='text: _.dollars(cost, 0)'></td>
+                                <td>
+                                    <input type='checkbox' data-bind='checked: $parent.meals[id]'>
+                                    </input>
+                                </td>
+                            </tr>
+                            <!-- /ko -->
+                        </tbody></table>
+                    </td>
+                </tr>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
                         In case of emergency, please contact (name and phone number):
                     </td>
                     <td class='borderless'>
@@ -301,28 +322,70 @@
     <!-- ko with: reservations -->
     <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
         <p>
-            We're returning to our usual house in Ocean Grove, New Jersey, and coordinating group
-            reservations at the Quaker Inn, a short walk away.
+            We're returning to the group of three houses in Corinth, NY that we rented last year.
+            All three houses are right next to each other.
         </p>
         <p>
-            If you want to claim an entire two-person bed for yourself, you're allowed to do that;
-            select both slots.  You must, of course, pay for both slots.  If you select only one
-            slot, expect the other slot to be taken by somebody else.
+            If you want to claim an entire two-person bed for yourself, you're allowed to do
+            that; select both slots.  You must, of course, pay for both slots.  If you select
+            only one slot, expect the other slot to be taken by somebody else.
         </p>
         <p>
             Feel free to make your own rooming arrangements; we will include a charge of
             <span data-bind='text: _.dollars($root.party_data.independent_room_fee, 0)'></span>
-            per night to cover meals, snacks, and house supplies.
+            per night to cover snacks and house supplies.
         </p>
 
         <div class="subsection">
-            <h2>The House</h2>
-            <div data-bind="template: { name: 'room_group', data: 'house' }"></div>
+            <h2>The Party House</h2>
+            <p>
+                The largest chunk of the party, including meals, will be at this house, which has
+                lots of great public space.  If you decide to stay in this house, expect wackiness
+                and fun at all hours of the day and night!
+            </p>
+            <p>
+            <a href="static/Summer_PartyHouse_MainFloor.png">
+                <img src="static/Summer_PartyHouse_MainFloor_small.png"/>
+            </a>
+            <a href="static/Summer_PartyHouse_OtherFloors.png">
+                <img src="static/Summer_PartyHouse_OtherFloors_small.png"/>
+            </a>
+            </p>
+            <div data-bind="template: { name: 'room_group', data: 'party_house' }"></div>
+        </div>
+
+        <div class="subsection">
+            <h2>The Quiet House</h2>
+            <p>
+                We expect this will be a nice place for mellow tea times and board games, and be a
+                good place to stay if you have a relatively early bedtime.
+            </p>
+            <a href="static/Summer_QuietHouse.png">
+                <img src="static/Summer_QuietHouse_small.png"/>
+            </a>
+            <div data-bind="template: { name: 'room_group', data: 'quiet_house' }"></div>
+        </div>
+
+        <div class="subsection">
+            <h2>The Family House</h2>
+            <p>
+                We expect HRSFAN parents and HRSFAtots to want to stay here, and have the pleasure
+                of hanging out with the other HRSFA families.
+            </p>
+            <a href="static/Summer_FamilyHouse.png">
+                <img src="static/Summer_FamilyHouse_small.png"/>
+            </a>
+            <div data-bind="template: { name: 'room_group', data: 'family_house' }"></div>
         </div>
 
         <div class="subsection">
             <h2>The Hotel</h2>
-            <div data-bind="template: { name: 'room_group', data: 'hotel' }"></div>
+            <p>
+                For people interested in more privacy, the
+                <a href="http://www.islandviewmotel.com/" target="_blank">Island View Motel</a> is
+                about a ten minute drive from the houses.  We are not organizing hotel reservations,
+                so if you would rather stay here, please go ahead and make reservations yourself.
+            </p>
         </div>
 
         <div
@@ -356,7 +419,7 @@
                     guest policy</a>.
                 </li>
                 <li>
-                    You agree to the provisions of the HRSFANS
+                    You understand and acknowledge the HRSFANS
                     <a href="https://docs.google.com/document/d/1cqa1G9eDkL-pEav8EqqmY5K2R3dVBbyocSNn-JCwQG4" target="_blank">
                     policy on harassment</a>.
                 </li>
@@ -534,10 +597,11 @@
                     your payment.
                 </li>
                 <li>
-                    Check or cash in person, if you will see Andrew in the next week or two.
+                    Check or cash in person, if you will see Andrew before the party.
                 </li>
                 <li>
-                    Check by mail.  Send an email if you don't have Andrew's address.
+                    Check by mail.  <b>Please contact Andrew for his address, even if you think you
+                    already have it; it's changed fairly recently.</b>
                 </li>
             </ul>
         </p>
@@ -565,7 +629,7 @@
     <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
         <p>
             We're still using the
-            <a href="http://multivac.hrsfans.org/index.php?title=Retreat_2016" target="_blank">
+            <a href="http://multivac.hrsfans.org/index.php?title=Summer_Party_2016" target="_blank">
             wiki</a> to organize activities, games, cooking, and cleaning.  Head over there to sign
             up for these things!
         </p>
@@ -726,9 +790,7 @@
                     <option value=''></option>
                     <option value='Expense: Deposits'>Expense: Deposits</option>
                     <option value='Expense: Houses / Hotels'>Expense: Houses / Hotels</option>
-                    <option value='Expense: Meals'>Expense: Meals</option>
-                    <option value='Expense: Snacks'>Expense: Snacks</option>
-                    <option value='Expense: Supplies'>Expense: Supplies</option>
+                    <option value='Expense: Meals / Snacks / Supplies'>Expense: Meals / Snacks / Supplies</option>
                     <option value='Expense: Other'>Expense: Other</option>
                 </select>
             </p>
@@ -845,6 +907,7 @@
                 <th>Nights</th>
                 <th>Due</th>
                 <th>Rooms</th>
+                <th>Meals</th>
                 <th>Aid</th>
                 <th>Subsidy</th>
                 <th>Payments</th>
@@ -906,6 +969,41 @@
                 <td class='cell_value_wide' data-bind='text: _.dollars(total)'></td>
         </tbody></table>
         <!-- /ko -->
+    </div>
+    <!-- /ko -->
+
+    <!-- ko with: meals -->
+    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
+        <table class="meals_table"><tbody>
+            <tr>
+                <th></th>
+                <!-- ko foreach: $root.party_data.meals -->
+                <th class="meal_header_name" data-bind='text: name'></th>
+                <!-- /ko -->
+            </tr>
+            <tr>
+                <td class="meal_summary">Cost</td>
+                <!-- ko foreach: $root.party_data.meals -->
+                <td class="meal_total bg_gray" data-bind='text: _.dollars(cost, 0)'></td>
+                <!-- /ko -->
+                <td class='borderless'></td>
+            </tr>
+            <tr>
+                <td class="meal_summary">Count</td>
+                <!-- ko foreach: $root.party_data.meals -->
+                <td class="meal_total bg_gray" data-bind='text: $parent.counts()[id]'></td>
+                <!-- /ko -->
+                <td class='borderless'></td>
+            </tr>
+            <!-- ko foreach: $root.regs_by_name -->
+            <tr>
+                <td class='cell_name bg_gray' data-bind='text: name'></td>
+                <!-- ko foreach: $root.party_data.meals -->
+                <td class='meal_cell'><span data-bind='visible: $parent.meals[id]'>✓</span></td>
+                <!-- /ko -->
+            </tr>
+            <!-- /ko -->
+        </tbody></table>
     </div>
     <!-- /ko -->
 

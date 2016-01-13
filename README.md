@@ -22,7 +22,7 @@ deal with hosting, and I'd used it before.
 You may also need the documentation for the following packages, but don't need to download them.
 
   * [Knockout](http://knockoutjs.com/)
-  * [Moment] (http://momentjs.com/)
+  * [Moment](http://momentjs.com/)
   * [Underscore](http://underscorejs.org/)
 
 ### Detailed steps
