@@ -1,5 +1,6 @@
 # TODO
 
+
 ## v5 - React
 
 This version switches to React from Knockout.  It might cause minor user-visible improvements, but
@@ -16,8 +17,6 @@ might also spawn UX improvements, but the focus is replacing the custom CSS.
 
   * Streamline the registration experience as much as possible
     - Make clearer how to edit existing registrations
-    - Change the "independent arrangements" mechanism to be less error-prone
-    - Single meals checkbox
   * More financial features, e.g. ready-made summary report(s) and accounting for HRSFANS advances
   * Look into saving partial data or autosaving
   * Improve error handling, especially if an API call crashes

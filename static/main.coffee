@@ -88,7 +88,6 @@ class PageModel
                 @credits = new Credits this
                 @registrations = new Registrations this
                 @financials = new Financials this
-                @meals = new Meals this
                 @dietary_info = new DietaryInfo this
                 @other_info = new OtherInfo this
                 @email_list = new EmailList this
@@ -115,20 +114,15 @@ class PageModel
 
     # Postprocess data after retrieval from the server and reset the sections
     reset: =>
-        # Tag each registration with its name and how many nights it has registered; prepare a list
-        # of credits (both artificial, for recording charges; and sent by the server)
+        # Tag each registration with its name
         for name, reg of @server_data.registrations
-            reg.num_nights = 0
-            for id, is_reserved of reg.nights
-                if is_reserved
-                    reg.num_nights += 1
             reg.name = name
-            reg.credits = []
 
-        # Room charges, and also counting unreserved nights; this uses some temporary variables
+        # Tag each registration with the nights it's staying and add room, nightly, and meal charges
         for name, reg of @server_data.registrations
+            reg.credits = []
+            reg.nights = {}
             reg._room_charge = 0
-            reg._unreserved_nights = _.clone(reg.nights)
         for night in @nights
             for id, group of @party_data.rooms
                 for room in group
@@ -137,37 +131,43 @@ class PageModel
                         if key of @server_data.reservations
                             name = @server_data.reservations[key]
                             @server_data.registrations[name]._room_charge += bed.costs[night.id]
-                            @server_data.registrations[name]._unreserved_nights[night.id] = false
+                            @server_data.registrations[name].nights[night.id] = true
         for name, reg of @server_data.registrations
+            reg.num_nights = 0
+            for id, is_reserved of reg.nights
+                if is_reserved
+                    reg.num_nights += 1
             if reg._room_charge
                 reg.credits.push { amount: -reg._room_charge, category: 'Rooms', date: null }
             delete reg._room_charge
-            reg.num_unreserved_nights = 0
-            for id, is_unreserved of reg._unreserved_nights
-                if is_unreserved
-                    reg.num_unreserved_nights += 1
-            delete reg._unreserved_nights
-            if reg.num_unreserved_nights
+            if reg.num_nights
                 reg.credits.push
-                    amount: -@party_data.independent_room_fee * reg.num_unreserved_nights
-                    category: 'Rooms: Independent Arrangements'
+                    amount: -@party_data.nightly_fee * reg.num_nights
+                    category: 'Snacks / Supplies / Space'
                     date: null
-
-        # Meal charges
-        for name, reg of @server_data.registrations
-            meals = 0
-            for meal in @party_data.meals
-                if reg.meals? and reg.meals[meal.id]
-                    meals += meal.cost
-            if meals
-                reg.credits.push { amount: -meals, category: 'Meals', date: null }
+                if not reg.meal_opt_out
+                    reg.credits.push
+                        amount: -@party_data.meals_fee * reg.num_nights
+                        category: 'Meals'
+                        date: null
 
         # Aid and subsidy charges
         for name, reg of @server_data.registrations
+            if reg.consolidated
+                reg.credits.push
+                    amount: -reg.consolidated,
+                    category: 'Consolidated Aid Contribution'
+                    date: null
             if reg.aid
-                reg.credits.push { amount: -reg.aid, category: 'Financial Assistance', date: null }
+                reg.credits.push
+                    amount: -reg.aid
+                    category: 'Financial Assistance'
+                    date: null
             if reg.subsidy
-                reg.credits.push { amount: -reg.subsidy, category: 'Transport Subsidy', date: null }
+                reg.credits.push
+                    amount: -reg.subsidy
+                    category: 'Transport Subsidy'
+                    date: null
 
         # Credit groups: set up a list of associated credits and a field for the unallocated amount
         for id, cg of @server_data.credit_groups
@@ -320,13 +320,8 @@ class EditRegistration extends Section
         # A ton of observables backing the various sections of the registration form
         @full_name = ko.observable()
         @phone = ko.observable()
-        @nights = {}
-        for night in page.nights
-            @nights[night.id] = ko.observable()
-        @meals = {}
-        for meal in page.party_data.meals
-            @meals[meal.id] = ko.observable()
         @emergency = ko.observable()
+        @meal_opt_out = ko.observable(false)
         @dietary = new OptionalEntry()
         @medical = new OptionalEntry()
         @children = new OptionalEntry()
@@ -342,11 +337,8 @@ class EditRegistration extends Section
     reset: =>
         @full_name @server_reg?.full_name
         @phone @server_reg?.phone
-        for id, obs of @nights
-            obs @server_reg.nights[id]
-        for id, obs of @meals
-            obs @server_reg.meals[id]
         @emergency @server_reg?.emergency
+        @meal_opt_out @server_reg?.meal_opt_out
         @dietary.reset @server_reg?.dietary
         @medical.reset @server_reg?.medical
         @children.reset @server_reg?.children
@@ -357,15 +349,9 @@ class EditRegistration extends Section
             return 'changed'
         if not eq(@phone(), @server_reg?.phone)
             return 'changed'
-        for id, obs of @nights
-            server_val = @server_reg.nights[id]
-            if (obs() and not server_val) or (not obs() and server_val)
-                return 'changed'
-        for id, obs of @meals
-            server_val = @server_reg.meals[id]
-            if (obs() and not server_val) or (not obs() and server_val)
-                return 'changed'
         if not eq(@emergency(), @server_reg?.emergency)
+            return 'changed'
+        if not eq(@meal_opt_out(), @server_reg?.meal_opt_out)
             return 'changed'
         if not eq(@dietary.value(), @server_reg?.dietary)
             return 'changed'
@@ -375,27 +361,19 @@ class EditRegistration extends Section
             return 'changed'
         if not eq(@guest.value(), @server_reg?.guest)
             return 'changed'
-        if not @server_reg.num_nights
+        if not @server_reg.full_name
             return 'error'
         @message ''
         'good'
 
     # Submission methods
     submit: =>
-        nights = {}
-        for id, obs of @nights
-            nights[id] = obs()
-        meals = {}
-        for id, obs of @meals
-            meals[id] = obs()
-
         message =
             name: @server_reg.name
             full_name: @full_name()
             phone: @phone()
-            nights: nights
-            meals: meals
             emergency: @emergency()
+            meal_opt_out: @meal_opt_out()
             dietary: @dietary.value()
             medical: @medical.value()
             children: @children.value()
@@ -410,9 +388,6 @@ class EditRegistration extends Section
             return false
         if not @phone()?.length
             @message 'Please enter a phone number.'
-            return false
-        if not _.some(obs() for id, obs of @nights)
-            @message 'Please select at least one night.'
             return false
         else if not @emergency()?.length
             @message 'Please provide emergency contact information.'
@@ -481,20 +456,12 @@ class Reservations extends Section
         @allow_submit = ko.computed(@get_allow_submit).extend(throttle: 25)
 
     reset: =>
-        # It will be convenient to compute this while regenerating cells
-        has_active_reg = false
-        has_unreserved = false
-
         # Regenerate the cells
-        for night in @parent.nights
-            # Some arguments for the ClickableCells are fixed across rooms
-            values = [null]
-            for reg in @parent.group_regs_by_name()
-                if reg.nights[night.id]
-                    values.push(reg.name)
-                    has_active_reg = true
-                    has_unreserved = has_unreserved or reg.num_unreserved_nights
+        values = [null]
+        for reg in @parent.group_regs_by_name()
+            values.push(reg.name)
 
+        for night in @parent.nights
             for id, group of @parent.party_data.rooms
                 for room in group
                     for bed in room.beds
@@ -503,8 +470,8 @@ class Reservations extends Section
 
                         # ClickableCells for rooms we can reserve.  This happens if:
                         if @parent.reservations_open and  # We can reserve things
+                           values.length > 1 and          # We are attending the party at all
                            night.id of bed.costs and      # The room is available
-                           values.length > 1 and          # We are attending the party this night
                            existing in values             # Nobody else has reserved the room
 
                             styles = []
@@ -528,6 +495,11 @@ class Reservations extends Section
                             @cells[key] new FixedCell(existing, style)
 
         # Set monitoring variables
+        has_active_reg = false
+        has_unreserved = false
+        for reg in @parent.group_regs_by_name()
+            has_active_reg = has_active_reg or reg.full_name
+            has_unreserved = has_unreserved or not reg.num_nights
         @has_active_reg has_active_reg
         @has_unreserved has_unreserved
 
@@ -543,7 +515,7 @@ class Reservations extends Section
                 @message ''
                 return 'changed'
         if @has_unreserved()
-            @message 'Warning: you have not reserved a room for one or more nights.'
+            @message 'Warning: you have not reserved rooms for one or more people.'
             return 'error'
         @message ''
         'good'
@@ -620,6 +592,7 @@ class Confirmation extends Section
 class ConfirmRegistration extends Section
     # Overridden methods
     constructor: (@page, parent, @server_reg) ->
+        @consolidated = ko.observable()
         @subsidy_choice = ko.observable()
         @subsidy_value = ko.observable()
         @aid_choice = ko.observable()
@@ -637,6 +610,7 @@ class ConfirmRegistration extends Section
         [subsidy_choice, subsidy_value] = @parse_amt @server_reg.subsidy
         [aid_choice, aid_value] = @parse_amt @server_reg.aid
 
+        @consolidated @server_reg.consolidated
         @subsidy_choice subsidy_choice
         @subsidy_value subsidy_value
         @aid_choice aid_choice
@@ -645,6 +619,8 @@ class ConfirmRegistration extends Section
         @confirmed @server_reg.confirmed
 
     get_status: =>
+        if not eq(@consolidated(), @server_reg.consolidated)
+            return 'changed'
         if not eq_strict(@subsidy(), @server_reg.subsidy)
             return 'changed'
         if not eq_strict(@aid(), @server_reg.aid)
@@ -661,6 +637,7 @@ class ConfirmRegistration extends Section
     submit: =>
         message =
             name: @server_reg.name
+            consolidated: parseFloat @consolidated()
             subsidy: @subsidy()
             aid: @aid()
             aid_pledge: if @aid() == 0 then 0 else parseFloat @aid_pledge()
@@ -668,11 +645,14 @@ class ConfirmRegistration extends Section
         @page.post_json('call/update_registration', message)
 
     get_allow_submit: =>
+        if not @consolidated()? or not valid_float(@consolidated())
+            @message 'Please indicate whether you are contributing to the consolidated aid fund.'
+            return false
         if not @subsidy()?
-            @message 'Please select a transportation subsidy option.'
+            @message 'Please select a valid transportation subsidy option.'
             return false
         if not @aid()? or (@aid_choice() == 'contributing' and not valid_float(@aid_pledge()))
-            @message 'Please select a financial assistance option.'
+            @message 'Please select a valid financial assistance option.'
             return false
         if not @confirmed()
             @message 'Please confirm this registration.'
@@ -682,8 +662,6 @@ class ConfirmRegistration extends Section
 
     # Utility methods; these impedance-match between server-side floats and our radio-and-blanks
     parse_amt: (amt) =>
-        if not amt?
-            return [null, null]
         if amt == 0
             return ['none', 0]
         if amt > 0
@@ -1092,8 +1070,16 @@ class Credits extends Section
 class Registrations extends Section
     label: 'Registrations'
 
-    # The prefixes to total by
-    total_by: ['Rooms', 'Meals', 'Financial', 'Transport', 'Payment / Refund', 'Expense', 'Other']
+    # Prefixes to total by
+    total_by: [
+        'General'
+        'Consolidated'
+        'Financial'
+        'Transport'
+        'Payment / Refund'
+        'Expense'
+        'Other'
+    ]
 
     # Overridden methods
     constructor: (parent) ->
@@ -1103,6 +1089,9 @@ class Registrations extends Section
         super parent
 
     reset: =>
+        # The "General" prefix is not actually a prefix, so we hack around this
+        general_categories = ['Rooms', 'Snacks / Supplies / Space', 'Meals']
+
         # Generate the counts
         counts =
             no_nights: 0
@@ -1130,10 +1119,13 @@ class Registrations extends Section
                 totals[category] = 0
             for credit in reg.credits
                 prefix = 'Other'
-                for p in @total_by
-                    if credit.category[...p.length] == p
-                        prefix = p
-                        break
+                if credit.category in general_categories
+                    prefix = "General"
+                else
+                    for p in @total_by
+                        if credit.category[...p.length] == p
+                            prefix = p
+                            break
                 totals[prefix] -= credit.amount
             data.push { reg, totals }
         @data data
@@ -1151,7 +1143,7 @@ class Financials extends Section
     surplus_categories: [
         ['General Fund', [
             'Rooms'
-            'Rooms: Independent Arrangements'
+            'Snacks / Supplies / Space'
             'Meals'
             'Donations'
             'Expense: Houses / Hotels'
@@ -1161,8 +1153,11 @@ class Financials extends Section
             'Adjustment: Meals'
             'Adjustment: Other'
         ]]
-        ['Financial Assistance', ['Financial Assistance']]
-        ['Transport Subsidy', ['Transport Subsidy']]
+        ['Aid Funds', [
+            'Consolidated Aid Contribution'
+            'Financial Assistance'
+            'Transport Subsidy'
+        ]]
         ['*Net Payments', ['Payment / Refund']]
         ['Other', ['Expense: Deposits']]
     ]
@@ -1233,27 +1228,6 @@ class Financials extends Section
     # Helpers for formatting
     total_style: (due) =>
         choose_by_sign(due, 'bg_green', 'bg_red', 'bg_gray')
-
-
-# Admin section: meals table
-class Meals extends Section
-    label: 'Meals'
-
-    # Overridden methods
-    constructor: (parent) ->
-        @counts = ko.observable {}
-
-        super parent
-
-    reset: =>
-        counts = {}
-        for meal in @parent.party_data.meals
-            counts[meal.id] = 0
-        for reg in @parent.regs_by_name()
-            for id, choice of reg.meals
-                if choice
-                    counts[id] += 1
-        @counts counts
 
 
 # Admin section: dietary information list

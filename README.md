@@ -14,7 +14,6 @@ deal with hosting, and I'd used it before.
 ### Things you will need
 
   * [Python 2.7](http://python.org/).  App Engine doesn't support Python 3 yet, as far as I know.
-  * [PyYAML](http://pyyaml.org/).
   * [Coffeescript](http://coffeescript.org/). This is a somewhat Python-esque language that compiles
     to Javascript while filing off a lot of Javascript's warts.
   * The App Engine [Python SDK](https://cloud.google.com/appengine/downloads).

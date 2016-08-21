@@ -8,7 +8,7 @@
     <script type='text/javascript' src='static/moment.min.js'></script>
     <script type='text/javascript' src='static/underscore-min.js'></script>
     <script type='text/javascript' src='static/main.js'></script>
-    <title>Summer Retreat 2016</title>
+    <title>Winter Retreat 2017</title>
 </head>
 
 <body>
@@ -45,7 +45,9 @@
                 <td class='borderless'></td>
                 <td class='borderless'></td>
                 <!-- ko foreach: $root.nights -->
-                <td class='bg_gray' colspan='2' data-bind='text: name'></td>
+                <td class='bg_gray' colspan='2'>
+                    <span data-bind='text: name'></span><br><span data-bind='text: date'></span>
+                </td>
                 <!-- /ko -->
             </tr>
             <!-- ko foreach: $root.party_data.rooms[$data] -->
@@ -146,48 +148,6 @@
                 </tr>
                 <tr class='reg_row'>
                     <td class='borderless reg_label'>
-                        I am staying the following nights:
-                    </td>
-                    <td class='borderless'>
-                        <table class='reg_subtable'><tbody>
-                            <!-- ko foreach: $root.nights -->
-                            <tr class='bg_gray'>
-                                <td
-                                    class='cell_label_medium_plus_cost'
-                                    data-bind='text: name + ", " + date'
-                                ></td>
-                                <td>
-                                    <input type='checkbox' data-bind='checked: $parent.nights[id]'>
-                                    </input>
-                                </td>
-                            </tr>
-                            <!-- /ko -->
-                        </tbody></table>
-                    </td>
-                </tr>
-                <tr class='reg_row'>
-                    <td class='borderless reg_label'>
-                        I plan to eat the following meals: <br><br>(If you're not sure, please
-                        consider contributing to the meal fund anyway; we'll put your contribution
-                        to good use!  Otherwise, you can pay cash on site, as always.)
-                    </td>
-                    <td class='borderless'>
-                        <table class='reg_subtable'><tbody>
-                            <!-- ko foreach: $root.party_data.meals -->
-                            <tr class='bg_gray'>
-                                <td class='cell_label_medium' data-bind='text: name'></td>
-                                <td class='cell_cost' data-bind='text: _.dollars(cost, 0)'></td>
-                                <td>
-                                    <input type='checkbox' data-bind='checked: $parent.meals[id]'>
-                                    </input>
-                                </td>
-                            </tr>
-                            <!-- /ko -->
-                        </tbody></table>
-                    </td>
-                </tr>
-                <tr class='reg_row'>
-                    <td class='borderless reg_label'>
                         In case of emergency, please contact (name and phone number):
                     </td>
                     <td class='borderless'>
@@ -197,10 +157,12 @@
                         ></input>
                     </td>
                 </tr>
-            </tbody></table>
-
-            <h3>Additional Information</h3>
-            <table class='reg_table'><tbody>
+                <tr class='reg_row'>
+                    <td class='borderless reg_label'>
+                        <input type='checkbox' data-bind='checked: meal_opt_out'></input>
+                        I do not plan to eat any party-provided meals.
+                    </td>
+                </tr>
                 <tr class='reg_row'>
                     <td class='borderless reg_label'>
                         <input type='checkbox' data-bind='checked: dietary.checkbox'></input>
@@ -322,70 +284,38 @@
     <!-- ko with: reservations -->
     <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
         <p>
-            We're returning to the group of three houses in Corinth, NY that we rented last year.
-            All three houses are right next to each other.
+            Once again we're staying in our usual house in Ocean Grove, New Jersey, and coordinating
+            group reservations at the Quaker Inn, a short walk away.
         </p>
         <p>
-            If you want to claim an entire two-person bed for yourself, you're allowed to do
-            that; select both slots.  You must, of course, pay for both slots.  If you select
-            only one slot, expect the other slot to be taken by somebody else.
+            If you reserve a double or queen bed, you are responsible for filling both slots, either
+            by finding a roommate or by reserving both slots for yourself.
         </p>
         <p>
-            Feel free to make your own rooming arrangements; we will include a charge of
-            <span data-bind='text: _.dollars($root.party_data.independent_room_fee, 0)'></span>
-            per night to cover snacks and house supplies.
+            In addition to the costs shown, there are flat fees of
+            <b><span data-bind='text: _.dollars($root.party_data.nightly_fee, 0)'></span></b>
+            per night to cover snacks, house supplies, and party space, and
+            <b><span data-bind='text: _.dollars($root.party_data.meals_fee, 0)'></span></b>
+            per night for meals (unless you opted out in your registration).
         </p>
 
         <div class="subsection">
-            <h2>The Party House</h2>
-            <p>
-                The largest chunk of the party, including meals, will be at this house, which has
-                lots of great public space.  If you decide to stay in this house, expect wackiness
-                and fun at all hours of the day and night!
-            </p>
-            <p>
-            <a href="static/Summer_PartyHouse_MainFloor.png">
-                <img src="static/Summer_PartyHouse_MainFloor_small.png"/>
-            </a>
-            <a href="static/Summer_PartyHouse_OtherFloors.png">
-                <img src="static/Summer_PartyHouse_OtherFloors_small.png"/>
-            </a>
-            </p>
-            <div data-bind="template: { name: 'room_group', data: 'party_house' }"></div>
-        </div>
-
-        <div class="subsection">
-            <h2>The Quiet House</h2>
-            <p>
-                We expect this will be a nice place for mellow tea times and board games, and be a
-                good place to stay if you have a relatively early bedtime.
-            </p>
-            <a href="static/Summer_QuietHouse.png">
-                <img src="static/Summer_QuietHouse_small.png"/>
-            </a>
-            <div data-bind="template: { name: 'room_group', data: 'quiet_house' }"></div>
-        </div>
-
-        <div class="subsection">
-            <h2>The Family House</h2>
-            <p>
-                We expect HRSFAN parents and HRSFAtots to want to stay here, and have the pleasure
-                of hanging out with the other HRSFA families.
-            </p>
-            <a href="static/Summer_FamilyHouse.png">
-                <img src="static/Summer_FamilyHouse_small.png"/>
-            </a>
-            <div data-bind="template: { name: 'room_group', data: 'family_house' }"></div>
+            <h2>The House</h2>
+            <div data-bind="template: { name: 'room_group', data: 'house' }"></div>
         </div>
 
         <div class="subsection">
             <h2>The Hotel</h2>
+            <div data-bind="template: { name: 'room_group', data: 'hotel' }"></div>
+        </div>
+
+        <div class="subsection">
+            <h2>Other Arrangements</h2>
             <p>
-                For people interested in more privacy, the
-                <a href="http://www.islandviewmotel.com/" target="_blank">Island View Motel</a> is
-                about a ten minute drive from the houses.  We are not organizing hotel reservations,
-                so if you would rather stay here, please go ahead and make reservations yourself.
+                If you are planning to find your own place to stay, we still need to know which
+                which nights you'll be coming; please add yourself below.
             </p>
+            <div data-bind="template: { name: 'room_group', data: 'other' }"></div>
         </div>
 
         <div
@@ -398,9 +328,8 @@
     <!-- ko with: confirmation -->
     <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
         <p>
-            Please let us know if you would like to participate in the transportation subsidy or
-            financial assistance programs.  See
-            <a href="http://multivac.hrsfans.org/index.php?title=Retreat_2016#Transport_Subsidy_and_Financial_Assistance" target="_blank">
+            Please let us know if you would like to participate in financial aid programs.  See
+            <a href="http://multivac.hrsfans.org/index.php?title=Winter_Party_2017#Transport_Subsidy_and_Financial_Assistance" target="_blank">
             the wiki</a> for more.  All contributors and recipients are confidential.
         </p>
 
@@ -431,6 +360,35 @@
             <div data-bind="template: { name: 'name-and-email', data: server_reg }"></div>
 
             <!-- ko if: $parent.visible_section() == $data -->
+            <p>
+                This winter we are experimenting with a new consolidated aid contribution option.
+                Money collected in this fund will be applied to either transportation subsidies or
+                direct financial assistance as necessary, improving our ability to offer aid to
+                everyone who needs it.
+            </p>
+            <p>
+                For those who are comfortable, we suggest a contribution of $25 per person, but any
+                amount is appreciated.  If you would prefer to contribute specifically towards
+                transportation subsidies or direct financial assistance, those options are still
+                available.
+            </p>
+            <p>
+                <b>We are particularly interested in helping interested undergraduates attend the
+                retreat.</b>  If you are an undergraduate, we suggest requesting at least $25 per
+                night from the financial assistance fund.
+            </p>
+
+            <div class='pmt_subsection'>
+                <p>
+                    I would like to contribute
+                    $<input
+                        class='money'
+                        data-bind='value: consolidated, valueUpdate: "afterkeydown"'
+                    ></input>
+                    to the consolidated aid fund.
+                </p>
+            </div>
+
             <div class='pmt_subsection'>
                 <p>
                     <input
@@ -466,8 +424,7 @@
                             valueUpdate: "afterkeydown"
                         '
                     ></input>
-                    to the transportation subsidy.  For those who are comfortable, we suggest a
-                    contribution of $10 per night, but any amount is appreciated.
+                    to the transportation subsidy.
                 </p>
                 <p>
                     <input
@@ -521,9 +478,7 @@
                             valueUpdate: "afterkeydown"
                         '
                     ></input>
-                    of this amount in my registration.  We rarely have to ask for more than $10 from
-                    any contributor; if you include this amount now, it is likely we will not need
-                    to ask you again.
+                    of this amount in my registration.
                 </p>
                 <p>
                     <input
@@ -600,8 +555,7 @@
                     Check or cash in person, if you will see Andrew before the party.
                 </li>
                 <li>
-                    Check by mail.  <b>Please contact Andrew for his address, even if you think you
-                    already have it; it's changed fairly recently.</b>
+                    Check by mail; contact Andrew for his address.
                 </li>
             </ul>
         </p>
@@ -629,7 +583,7 @@
     <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
         <p>
             We're still using the
-            <a href="http://multivac.hrsfans.org/index.php?title=Summer_Party_2016" target="_blank">
+            <a href="http://multivac.hrsfans.org/index.php?title=Winter_Party_2017" target="_blank">
             wiki</a> to organize activities, games, cooking, and cleaning.  Head over there to sign
             up for these things!
         </p>
@@ -790,7 +744,9 @@
                     <option value=''></option>
                     <option value='Expense: Deposits'>Expense: Deposits</option>
                     <option value='Expense: Houses / Hotels'>Expense: Houses / Hotels</option>
-                    <option value='Expense: Meals / Snacks / Supplies'>Expense: Meals / Snacks / Supplies</option>
+                    <option value='Expense: Meals / Snacks / Supplies'>
+                        Expense: Meals / Snacks / Supplies
+                    </option>
                     <option value='Expense: Other'>Expense: Other</option>
                 </select>
             </p>
@@ -905,9 +861,10 @@
             <tr>
                 <th>Name</th>
                 <th>Nights</th>
-                <th>Due</th>
-                <th>Rooms</th>
                 <th>Meals</th>
+                <th>Due</th>
+                <th>General</th>
+                <th>Consolidated</th>
                 <th>Aid</th>
                 <th>Subsidy</th>
                 <th>Payments</th>
@@ -925,6 +882,9 @@
                         css: reg.confirmed ? "bg_green" : "bg_gray"
                     '
                 ></td>
+                <td class='cell_value meal_cell'>
+                    <span data-bind='visible: !reg.meal_opt_out'>✓</span>
+                </td>
                 <td
                     class='cell_value'
                     data-bind='
@@ -969,41 +929,6 @@
                 <td class='cell_value_wide' data-bind='text: _.dollars(total)'></td>
         </tbody></table>
         <!-- /ko -->
-    </div>
-    <!-- /ko -->
-
-    <!-- ko with: meals -->
-    <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
-        <table class="meals_table"><tbody>
-            <tr>
-                <th></th>
-                <!-- ko foreach: $root.party_data.meals -->
-                <th class="meal_header_name" data-bind='text: name'></th>
-                <!-- /ko -->
-            </tr>
-            <tr>
-                <td class="meal_summary">Cost</td>
-                <!-- ko foreach: $root.party_data.meals -->
-                <td class="meal_total bg_gray" data-bind='text: _.dollars(cost, 0)'></td>
-                <!-- /ko -->
-                <td class='borderless'></td>
-            </tr>
-            <tr>
-                <td class="meal_summary">Count</td>
-                <!-- ko foreach: $root.party_data.meals -->
-                <td class="meal_total bg_gray" data-bind='text: $parent.counts()[id]'></td>
-                <!-- /ko -->
-                <td class='borderless'></td>
-            </tr>
-            <!-- ko foreach: $root.regs_by_name -->
-            <tr>
-                <td class='cell_name bg_gray' data-bind='text: name'></td>
-                <!-- ko foreach: $root.party_data.meals -->
-                <td class='meal_cell'><span data-bind='visible: $parent.meals[id]'>✓</span></td>
-                <!-- /ko -->
-            </tr>
-            <!-- /ko -->
-        </tbody></table>
     </div>
     <!-- /ko -->
 

@@ -29,7 +29,6 @@ def normalize_party_data():
     Ensure that IDs are unique strings; standardize types of room costs and set AVAILABLE_NIGHTS.
     '''
     _normalize_ids(PARTY_DATA['days'])
-    _normalize_ids(PARTY_DATA['meals'])
 
     beds = []
     for group in PARTY_DATA['rooms'].itervalues():
@@ -42,8 +41,6 @@ def normalize_party_data():
         AVAILABLE_NIGHTS[bed['id']] = set(bed['costs'])
 
 normalize_party_data()
-NIGHTS = {day['id'] for day in PARTY_DATA['days'][:-1]}  # Set of available nights
-MEALS = {meal['id'] for meal in PARTY_DATA['meals']}
 
 # A generic key used only as an ancestor to enable global transactional queries
 PARTY_KEY = ndb.Key('Party', '.')
@@ -71,24 +68,22 @@ class Registration(ndb.Model):
     email = ndb.StringProperty()
     group = ndb.StringProperty(required=True)
 
-    # Core system data
-    confirmed = ndb.BooleanProperty(required=True, default=False, indexed=False)
-    meals = ndb.JsonProperty(required=True, default={})
-    nights = ndb.JsonProperty(required=True, default={})
-
-    # Personal data
+    # Submitted data
     children = ndb.TextProperty(required=True, default='')
+    confirmed = ndb.BooleanProperty(required=True, default=False, indexed=False)
     dietary = ndb.TextProperty(required=True, default='')
     emergency = ndb.TextProperty(required=True, default='')
     full_name = ndb.TextProperty(required=True, default='')
     guest = ndb.TextProperty(required=True, default='')
+    meal_opt_out = ndb.BooleanProperty(required=True, default=False, indexed=False)
     medical = ndb.TextProperty(required=True, default='')
     phone = ndb.TextProperty(required=True, default='')
 
     # Financial items; we use None here to indicate that the user has not entered anything yet
-    aid = ndb.FloatProperty(indexed=False)
-    aid_pledge = ndb.FloatProperty(indexed=False)
-    subsidy = ndb.FloatProperty(indexed=False)
+    aid = ndb.FloatProperty(required=True, default=0.0, indexed=False)
+    aid_pledge = ndb.FloatProperty(required=True, default=0.0, indexed=False)
+    consolidated = ndb.FloatProperty(indexed=False)
+    subsidy = ndb.FloatProperty(required=True, default=0.0, indexed=False)
 
     @classmethod
     def group_for_user(cls, user):
@@ -153,16 +148,12 @@ class Registration(ndb.Model):
         obj = cls.get_or_raise(registration.pop('name'), group=group)
         obj.populate(**registration)
 
-        if not any(obj.nights.itervalues()):
-            raise APIError('No nights selected.')
-        if not NIGHTS.issuperset(obj.nights):
-            raise APIError('Invalid night selected.')
-        if not MEALS.issuperset(obj.meals):
-            raise APIError('Invalid meal selected.')
         if not (obj.emergency and obj.full_name and obj.phone):
             raise APIError('Missing mandatory field.')
-        if obj.confirmed and (obj.aid is None or obj.subsidy is None):
+        if obj.confirmed and obj.consolidated is None:
             raise APIError('Missing mandatory field.')
+        if (obj.consolidated is not None and obj.consolidated < 0.0) or (obj.aid_pledge < 0.0):
+            raise APIError('Invalid value for field.')
 
         obj.put()
 
@@ -361,21 +352,20 @@ def all_data(group=None):
         if reg.key in authorized_reg_keys:
             reg_dict = reg.to_dict()
         else:
-            # Non-group-members can only see the nights (and name)
-            reg_dict = {'nights': reg.nights}
+            # Non-group-members can only see the name
+            reg_dict = {}
         reg_dicts[reg.key.id()] = reg_dict
     result['registrations'] = reg_dicts
 
     # Reservations
-    reg_nights = {reg.key: reg.nights for reg in registrations}
     res_dict = {}
     for res in reservations:
         res_id = res.key.id()
         night, _, room = res_id.partition('|')
-        registered = res.registration in reg_nights and reg_nights[res.registration].get(night)
-        available = room in AVAILABLE_NIGHTS and night in AVAILABLE_NIGHTS[room]
-        if not (registered and available):
-            name = res.registration.id()
+        name = res.registration.id()
+        if (room not in AVAILABLE_NIGHTS
+            or night not in AVAILABLE_NIGHTS[room]
+            or name not in reg_dicts):
             logging.info('Deleting inconsistent reservation of %s for %r.', res_id, name)
             res.key.delete()
         else:
@@ -387,7 +377,7 @@ def all_data(group=None):
     credit_dicts = {}
     for credit in credits:
         cg = credit.credit_group
-        if credit.registration not in reg_nights or (cg is not None and cg not in cg_keys):
+        if credit.registration.id() not in reg_dicts or (cg is not None and cg not in cg_keys):
             logging.info('Deleting inconsistent credit: %r', credit.to_dict())
             credit.key.delete()
         elif credit.registration in authorized_reg_keys:
