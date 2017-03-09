@@ -8,7 +8,7 @@
     <script type='text/javascript' src='static/moment.min.js'></script>
     <script type='text/javascript' src='static/underscore-min.js'></script>
     <script type='text/javascript' src='static/main.js'></script>
-    <title>Winter Retreat 2017</title>
+    <title>Winter Retreat 2018</title>
 </head>
 
 <body>
@@ -329,7 +329,7 @@
     <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
         <p>
             Please let us know if you would like to participate in financial aid programs.  See
-            <a href="http://multivac.hrsfans.org/index.php?title=Winter_Party_2017#Transport_Subsidy_and_Financial_Assistance" target="_blank">
+            <a href="http://multivac.hrsfans.org/index.php?title=Winter_Party_2018#Transport_Subsidy_and_Financial_Assistance" target="_blank">
             the wiki</a> for more.  All contributors and recipients are confidential.
         </p>
 
@@ -361,21 +361,21 @@
 
             <!-- ko if: $parent.visible_section() == $data -->
             <p>
-                This winter we are experimenting with a new consolidated aid contribution option.
-                Money collected in this fund will be applied to either transportation subsidies or
-                direct financial assistance as necessary, improving our ability to offer aid to
-                everyone who needs it.
+                This winter we are once again collecting contributions for a consolidated
+                transportation subsidy and direct financial assistance fund, which proved quite
+                successful last year.  For those who are comfortable, we suggest a contribution of
+                $25 per person, but any amount is appreciated.
             </p>
             <p>
-                For those who are comfortable, we suggest a contribution of $25 per person, but any
-                amount is appreciated.  If you would prefer to contribute specifically towards
-                transportation subsidies or direct financial assistance, those options are still
-                available.
+                If this approach succeeds again this year, we are likely to move forward with a
+                permanent consolidation of funds.  For now, if you would prefer to contribute
+                specifically towards transportation subsidies or direct financial assistance, those
+                options are still available.
             </p>
             <p>
                 <b>We are particularly interested in helping interested undergraduates attend the
-                retreat.</b>  If you are an undergraduate, we suggest requesting at least $25 per
-                night from the financial assistance fund.
+                retreat.</b>  If you are an undergraduate, we suggest requesting at least $25 <b>per
+                night</b> from the financial assistance fund.
             </p>
 
             <div class='pmt_subsection'>
@@ -460,16 +460,7 @@
                         value='contributing'
                         data-bind='checked: aid_choice, attr: { name: "assistance" + $index() }'
                     ></input>
-                    I would like to pledge up to
-                    $<input
-                        class="money"
-                        data-bind='
-                            enable: aid_choice() == "contributing",
-                            value: aid_pledge,
-                            valueUpdate: "afterkeydown"
-                        '
-                    ></input>
-                    to help others attend the party.  Please include
+                    I would like to contribute
                     $<input
                         class="money"
                         data-bind='
@@ -478,7 +469,7 @@
                             valueUpdate: "afterkeydown"
                         '
                     ></input>
-                    of this amount in my registration.
+                    to help others attend the party.
                 </p>
                 <p>
                     <input
@@ -552,6 +543,10 @@
                     your payment.
                 </li>
                 <li>
+                    Paypal to onethreeseven@gmail.com.  Be sure to use the "send to friends and
+                    family" option so the entire amount arrives.
+                </li>
+                <li>
                     Check or cash in person, if you will see Andrew before the party.
                 </li>
                 <li>
@@ -583,7 +578,7 @@
     <div class="section" data-bind='css: status, visible: $parent.visible_section() == $data'>
         <p>
             We're still using the
-            <a href="http://multivac.hrsfans.org/index.php?title=Winter_Party_2017" target="_blank">
+            <a href="http://multivac.hrsfans.org/index.php?title=Winter_Party_2018" target="_blank">
             wiki</a> to organize activities, games, cooking, and cleaning.  Head over there to sign
             up for these things!
         </p>
@@ -817,7 +812,7 @@
                     <option value='Adjustment: Meals'>Adjustment: Meals</option>
                     <option value='Adjustment: Rooms'>Adjustment: Rooms</option>
                     <option value='Adjustment: Other'>Adjustment: Other</option>
-                    <option value='Donations'>Donations</option>
+                    <option value='Event Costs'>Event Costs</option>
                 </select>
             </p>
 
@@ -870,7 +865,6 @@
                 <th>Payments</th>
                 <th>Expenses</th>
                 <th>Other</th>
-                <th>Pledge</th>
             </tr>
             <!-- ko foreach: data -->
             <tr class='pointer' data-bind='click: $parent.select'>
@@ -898,10 +892,6 @@
                     data-bind='text: _.dollars($parent.totals[$data], 2, true)'
                 ></td>
                 <!-- /ko -->
-                <td
-                    class='cell_value bg_slate'
-                    data-bind='text: _.dollars(reg.aid_pledge, 0, true)'
-                ></td>
             </tr>
             <!-- /ko -->
         </tbody></table>

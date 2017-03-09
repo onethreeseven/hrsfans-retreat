@@ -40,7 +40,7 @@ file alone, so be sure to check this terminal if your changes don't seem to be d
 
 Next, run the SDK's development server:
 
-    google_appengine/dev_appserver.py hrsfans-retreat --storage_path data
+    python google_appengine/dev_appserver.py hrsfans-retreat --storage_path data
 
 If all is well, you should be able to browse to a local copy of the registration system at
 `localhost:8080`, and see an administrative interface at `localhost:8000`.
@@ -49,7 +49,7 @@ If all is well, you should be able to browse to a local copy of the registration
 
 If I've given you administrator access to the app, you can upload a new copy by doing
 
-    google_appengine/appcfg.py update hrsfans-retreat
+    python google_appengine/appcfg.py update hrsfans-retreat
 
 But you probably only want to do this if I'm out of touch or if you're taking over for me.
 

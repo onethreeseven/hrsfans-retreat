@@ -59,13 +59,12 @@ class PostHandler(webapp2.RequestHandler):
     Generic POST method handler.
     '''
     def post(self):
-        message = json.loads(self.request.get('message'))
-        group = _group()
+        message = json.loads(self.request.body)
+        message_group = message.pop('group')
+        group = message_group if users.is_current_user_admin() else _group()
+
         try:
-            if users.is_current_user_admin():
-                self.process(message, self.request.get('group'))
-            else:
-                self.process(message, group)
+            self.process(message, group)
         except APIError as e:
             logging.info('Error processing request: "%s"', e)
             error = str(e)

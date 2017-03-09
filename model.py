@@ -81,7 +81,6 @@ class Registration(ndb.Model):
 
     # Financial items; we use None here to indicate that the user has not entered anything yet
     aid = ndb.FloatProperty(required=True, default=0.0, indexed=False)
-    aid_pledge = ndb.FloatProperty(required=True, default=0.0, indexed=False)
     consolidated = ndb.FloatProperty(indexed=False)
     subsidy = ndb.FloatProperty(required=True, default=0.0, indexed=False)
 
@@ -152,7 +151,7 @@ class Registration(ndb.Model):
             raise APIError('Missing mandatory field.')
         if obj.confirmed and obj.consolidated is None:
             raise APIError('Missing mandatory field.')
-        if (obj.consolidated is not None and obj.consolidated < 0.0) or (obj.aid_pledge < 0.0):
+        if (obj.consolidated is not None and obj.consolidated < 0.0):
             raise APIError('Invalid value for field.')
 
         obj.put()

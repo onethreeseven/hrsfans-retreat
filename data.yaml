@@ -2,12 +2,12 @@
 # page if you need more help. The thing that gets me most often is missing the '-' before a new
 # entry.)
 
-nightly_fee: 11
+nightly_fee: 8
 meals_fee: 7
 
 # This is a UNIX timestamp; there are online converters to help you set the date.
 
-enable_reservations_after: 1476666000
+enable_reservations_after: 1509238800
 
 # In general things are identified to the system only by their id numbers. This means that if you
 # want to change the name of something, or how much it costs, you can do so without causing
@@ -24,19 +24,19 @@ enable_reservations_after: 1476666000
 
 days:
   - id: 1
-    name: Thursday
+    name: Friday
     date: December 29
   - id: 2
-    name: Friday
+    name: Saturday
     date: December 30
   - id: 3
-    name: Saturday
+    name: Sunday
     date: December 31
   - id: 4
-    name: Sunday
+    name: Monday
     date: January 1
   - id: 5
-    name: Monday
+    name: Tuesday
     date: January 2
 
 # By convention I'm separating the ids for the different houses by 1000, and the ids for different
@@ -160,17 +160,81 @@ rooms:
                 3: 38
                 4: 33
     hotel:
-      - room: Room 9
+      - room: Room 4
         beds:
-          - id: 2021
+          - id: 2211
+            bed: Double bed
+            costs:
+                1: 31
+                2: 36
+                3: 36
+                4: 31
+          - id: 2212
+            bed:
+            costs:
+                1: 31
+                2: 36
+                3: 36
+                4: 31
+      - room: Room 5
+        beds:
+          - id: 2171
+            bed: Queen bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+          - id: 2172
+            bed:
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+      - room: Room 6
+        beds:
+          - id: 2011
             bed: Twin bed
             costs:
                 1: 33
                 2: 38
                 3: 38
                 4: 33
-          - id: 2022
+          - id: 2012
             bed: Twin bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+      - room: Room 9
+        beds:
+          - id: 2041
+            bed: Twin bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+          - id: 2042
+            bed: Twin bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+      - room: Room 10
+        beds:
+          - id: 2141
+            bed: Queen bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+          - id: 2142
+            bed:
             costs:
                 1: 33
                 2: 38
@@ -192,16 +256,80 @@ rooms:
                 2: 38
                 3: 38
                 4: 33
+      - room: Room 13
+        beds:
+          - id: 2121
+            bed: Queen bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+          - id: 2122
+            bed:
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+      - room: Room 14
+        beds:
+          - id: 2131
+            bed: Queen bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+          - id: 2132
+            bed:
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+      - room: Room 17
+        beds:
+          - id: 2151
+            bed: Queen bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+          - id: 2152
+            bed:
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+      - room: Room 21
+        beds:
+          - id: 2161
+            bed: Queen bed
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
+          - id: 2162
+            bed:
+            costs:
+                1: 33
+                2: 38
+                3: 38
+                4: 33
       - room: Room 23
         beds:
-          - id: 2041
+          - id: 2021
             bed: Twin bed
             costs:
                 1: 33
                 2: 38
                 3: 38
                 4: 33
-          - id: 2042
+          - id: 2022
             bed: Twin bed
             costs:
                 1: 33
@@ -224,23 +352,7 @@ rooms:
                 2: 38
                 3: 38
                 4: 33
-      - room: Room 4
-        beds:
-          - id: 2061
-            bed: Queen bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2062
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 10
+      - room: Room 27
         beds:
           - id: 2111
             bed: Queen bed
@@ -256,102 +368,6 @@ rooms:
                 2: 38
                 3: 38
                 4: 33
-      - room: Room 13
-        beds:
-          - id: 2071
-            bed: Queen bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2072
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 20
-        beds:
-          - id: 2081
-            bed: Queen bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2082
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 21
-        beds:
-          - id: 2091
-            bed: Queen bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2092
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 22
-        beds:
-          - id: 2101
-            bed: Queen bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 21042
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 5
-        beds:
-          - id: 2121
-            bed: Double bed
-            costs:
-                1: 31
-                2: 36
-                3: 36
-                4: 31
-          - id: 2122
-            bed:
-            costs:
-                1: 31
-                2: 36
-                3: 36
-                4: 31
-      - room: Room 14
-        beds:
-          - id: 2131
-            bed: Double bed
-            costs:
-                1: 31
-                2: 36
-                3: 36
-                4: 31
-          - id: 2132
-            bed:
-            costs:
-                1: 31
-                2: 36
-                3: 36
-                4: 31
     other:
       - room: Other arrangements
         beds:
@@ -362,49 +378,63 @@ rooms:
                 2: 0
                 3: 0
                 4: 0
-          - id: 3012
+          - id: 3021
             bed:
             costs:
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3013
+          - id: 3031
             bed:
             costs:
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3014
+          - id: 3041
             bed:
             costs:
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3015
+          - id: 3051
             bed:
             costs:
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3016
+          - id: 3061
             bed:
             costs:
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3017
+          - id: 3071
             bed:
             costs:
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3018
+          - id: 3081
+            bed:
+            costs:
+                1: 0
+                2: 0
+                3: 0
+                4: 0
+          - id: 3091
+            bed:
+            costs:
+                1: 0
+                2: 0
+                3: 0
+                4: 0
+          - id: 3101
             bed:
             costs:
                 1: 0

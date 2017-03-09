@@ -99,13 +99,11 @@ class PageModel
 
     # Post method; pass the endpoint and the message to post
     post_json: (url, message) =>
-        data = new FormData()
-        data.append('message', JSON.stringify message)
-        data.append('group', @selected_group())
+        message.group = @selected_group()
 
         req = new XMLHttpRequest()
         req.open('POST', url, false)
-        req.send data
+        req.send JSON.stringify message
         { @server_data, error } = JSON.parse req.response
 
         @reset()
@@ -597,7 +595,6 @@ class ConfirmRegistration extends Section
         @subsidy_value = ko.observable()
         @aid_choice = ko.observable()
         @aid_value = ko.observable()
-        @aid_pledge = ko.observable()
         @confirmed = ko.observable()
 
         @reset()
@@ -615,7 +612,6 @@ class ConfirmRegistration extends Section
         @subsidy_value subsidy_value
         @aid_choice aid_choice
         @aid_value aid_value
-        @aid_pledge @server_reg.aid_pledge
         @confirmed @server_reg.confirmed
 
     get_status: =>
@@ -624,8 +620,6 @@ class ConfirmRegistration extends Section
         if not eq_strict(@subsidy(), @server_reg.subsidy)
             return 'changed'
         if not eq_strict(@aid(), @server_reg.aid)
-            return 'changed'
-        if not eq(@aid_pledge(), @server_reg.aid_pledge)
             return 'changed'
         if @confirmed() != @server_reg.confirmed
             return 'changed'
@@ -640,7 +634,6 @@ class ConfirmRegistration extends Section
             consolidated: parseFloat @consolidated()
             subsidy: @subsidy()
             aid: @aid()
-            aid_pledge: if @aid() == 0 then 0 else parseFloat @aid_pledge()
             confirmed: @confirmed()
         @page.post_json('call/update_registration', message)
 
@@ -651,7 +644,7 @@ class ConfirmRegistration extends Section
         if not @subsidy()?
             @message 'Please select a valid transportation subsidy option.'
             return false
-        if not @aid()? or (@aid_choice() == 'contributing' and not valid_float(@aid_pledge()))
+        if not @aid()?
             @message 'Please select a valid financial assistance option.'
             return false
         if not @confirmed()
@@ -1145,7 +1138,7 @@ class Financials extends Section
             'Rooms'
             'Snacks / Supplies / Space'
             'Meals'
-            'Donations'
+            'Event Costs'
             'Expense: Houses / Hotels'
             'Expense: Meals / Snacks / Supplies'
             'Expense: Other'
