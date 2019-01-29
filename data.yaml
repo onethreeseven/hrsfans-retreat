@@ -2,441 +2,380 @@
 # page if you need more help. The thing that gets me most often is missing the '-' before a new
 # entry.)
 
-nightly_fee: 8
-meals_fee: 7
+title: 'Winter Party 2019'
 
 # This is a UNIX timestamp; there are online converters to help you set the date.
 
-enable_reservations_after: 1509238800
+enable_reservations_after: 1539651600
 
-# In general things are identified to the system only by their id numbers. This means that if you
-# want to change the name of something, or how much it costs, you can do so without causing
-# confusion.  (Changing costs will update all outstanding balances automatically.)
+# In general things are identified to the system only by their IDs.  This means that if you want to
+# change the name of something, or how much it costs, you can do so without causing confusion.
+# (Changing costs will update all outstanding balances automatically.)
 
-# If you want to add a new entry, it should get a new id number; however, that number need not be
-# consecutive or in order. (The system uses the ordering in this file.)
+# If you add a new entry, make sure it gets an unused ID.
 
 # If you want to delete an entry, the system will gracefully delete all associated reservations.
 # You might want to look at whether any such reservations exist first, though.
 
-# Note: the code currently assumes that "nights" should be "days" minus the last day.  If you have
-# some kind of non-continuous party, we'll have to fix this (and I'll be sad).
-
-days:
+nights:
+  - id: 0
+    name: LARP
+    date: Dec. 27
+    common: 0
+    meals: 0
   - id: 1
     name: Friday
-    date: December 29
+    date: Dec. 28
+    common: 5
+    meals: 7
   - id: 2
     name: Saturday
-    date: December 30
+    date: Dec. 29
+    common: 5
+    meals: 7
   - id: 3
     name: Sunday
-    date: December 31
+    date: Dec. 30
+    common: 5
+    meals: 7
   - id: 4
     name: Monday
-    date: January 1
-  - id: 5
-    name: Tuesday
-    date: January 2
-
-# By convention I'm separating the ids for the different houses by 1000, and the ids for different
-# rooms by 10.  This is just to make it harder to accidentally reuse an id.
+    date: Dec. 31
+    common: 5
+    meals: 4
 
 # To indicate that a room is unavailable for a given night, leave out the corresponding room cost.
-rooms:
-    house:
-      - room: First floor room
+
+houses:
+  - id: house
+    name: The House
+    rooms:
+      - id: 1f-0
+        name: First floor room
         beds:
-          - id: 1011
-            bed: Twin bed
+          - id: 0
+            name: Twin
+            capacity: 1
             costs:
-                1: 45
-                2: 50
-                3: 50
-                4: 45
-      - room: Second floor room with bath
+                0: 38
+                1: 48
+                2: 48
+                3: 48
+                4: 48
+      - id: 2f-0
+        name: Second floor room with bath
         beds:
-          - id: 1021
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 45
-                2: 50
-                3: 50
-                4: 45
-          - id: 1022
-            bed:
-            costs:
-                1: 45
-                2: 50
-                3: 50
-                4: 45
-      - room: Second floor room
+                0: 38
+                1: 48
+                2: 48
+                3: 48
+                4: 48
+      - id: 2f-1
+        name: Second floor room
         beds:
-          - id: 1031
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 1032
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Second floor room
+                4: 38
+      - id: 2f-2
+        name: Second floor room
         beds:
-          - id: 1041
-            bed: Twin bed
+          - id: 0
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 1042
-            bed: Twin bed
+                4: 38
+          - id: 1
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-      - room: Third floor room
+                4: 38
+      - id: 3f-0
+        name: Third floor room
         beds:
-          - id: 1051
-            bed: Twin bed
+          - id: 0
+            name: Twin
+            capacity: 1
             costs:
-                1: 55
-                2: 60
-                3: 60
-                4: 55
-      - room: Third floor room
+                0: 38
+                1: 58
+                2: 58
+                3: 58
+                4: 58
+      - id: 3f-1
+        name: Third floor room
         beds:
-          - id: 1061
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 1062
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Third floor room
+                4: 38
+      - id: 3f-2
+        name: Third floor room
         beds:
-          - id: 1071
-            bed: Twin bed
+          - id: 0
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 1072
-            bed: Twin bed
+                4: 38
+          - id: 1
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-      - room: Third floor room
+                4: 38
+      - id: 3f-3
+        name: Third floor room
         beds:
-          - id: 1081
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 1082
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-    hotel:
-      - room: Room 4
+                4: 38
+  - id: hotel
+    name: The Hotel
+    rooms:
+      - id: f-0
+        name: First floor room (family-friendly)
         beds:
-          - id: 2211
-            bed: Double bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 31
-                2: 36
-                3: 36
-                4: 31
-          - id: 2212
-            bed:
-            costs:
-                1: 31
-                2: 36
-                3: 36
-                4: 31
-      - room: Room 5
+                1: 38
+                2: 38
+                3: 38
+      - id: f-1
+        name: First floor room (family-friendly)
         beds:
-          - id: 2171
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2172
-            bed:
+                4: 28
+          - id: 1
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 6
+                4: 28
+      - id: q-0
+        name: First floor room
         beds:
-          - id: 2011
-            bed: Twin bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 2012
-            bed: Twin bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 9
+                4: 38
+      - id: q-4
+        name: Second floor room
         beds:
-          - id: 2041
-            bed: Twin bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 2042
-            bed: Twin bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 10
+                4: 38
+      - id: q-2
+        name: Second floor room
         beds:
-          - id: 2141
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                0: 38
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 2142
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 11
+                4: 38
+      - id: q-1
+        name: Second floor room
         beds:
-          - id: 2031
-            bed: Twin bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 2032
-            bed: Twin bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 13
+                4: 38
+      - id: q-5
+        name: Second floor room
         beds:
-          - id: 2121
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                1: 38
                 2: 38
-                3: 38
-                4: 33
-          - id: 2122
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 14
+      - id: q-3
+        name: Second floor room
         beds:
-          - id: 2131
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 2132
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 17
+                4: 38
+      - id: q-6
+        name: Third floor room
         beds:
-          - id: 2151
-            bed: Queen bed
+          - id: 0
+            name: Queen
+            capacity: 2
             costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2152
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 21
+                0: 38
+      - id: t-1
+        name: Second floor room
         beds:
-          - id: 2161
-            bed: Queen bed
+          - id: 0
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 2162
-            bed:
+                4: 38
+          - id: 1
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-      - room: Room 23
+                4: 38
+      - id: t-2
+        name: Second floor room
         beds:
-          - id: 2021
-            bed: Twin bed
+          - id: 0
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-          - id: 2022
-            bed: Twin bed
+                4: 38
+          - id: 1
+            name: Twin
+            capacity: 1
             costs:
-                1: 33
+                1: 38
                 2: 38
                 3: 38
-                4: 33
-      - room: Room 25
+                4: 38
+  - id: other
+    name: Other arrangements
+    rooms:
+      - id: other
+        name: Other arrangements
         beds:
-          - id: 2051
-            bed: Twin bed
+          - id: 0
+            name:
+            capacity: 1
             costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2052
-            bed: Twin bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-      - room: Room 27
-        beds:
-          - id: 2111
-            bed: Queen bed
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-          - id: 2112
-            bed:
-            costs:
-                1: 33
-                2: 38
-                3: 38
-                4: 33
-    other:
-      - room: Other arrangements
-        beds:
-          - id: 3011
-            bed:
-            costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3021
-            bed:
+          - id: 1
+            name:
+            capacity: 1
             costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3031
-            bed:
+          - id: 2
+            name:
+            capacity: 1
             costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3041
-            bed:
+          - id: 3
+            name:
+            capacity: 1
             costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3051
-            bed:
+          - id: 4
+            name:
+            capacity: 1
             costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3061
-            bed:
+          - id: 5
+            name:
+            capacity: 1
             costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3071
-            bed:
+          - id: 6
+            name:
+            capacity: 1
             costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0
                 4: 0
-          - id: 3081
-            bed:
+          - id: 7
+            name:
+            capacity: 1
             costs:
-                1: 0
-                2: 0
-                3: 0
-                4: 0
-          - id: 3091
-            bed:
-            costs:
-                1: 0
-                2: 0
-                3: 0
-                4: 0
-          - id: 3101
-            bed:
-            costs:
+                0: 0
                 1: 0
                 2: 0
                 3: 0

@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto:400,400i,700');
+
+* {
+    font-family: 'Roboto';
+}
+
+.override-border-none {
+    border: none !important;
+}
+
+.override-page-break-after-always {
+    page-break-after: always !important;
+}
+
+.override-page-break-inside-avoid {
+    page-break-inside: avoid !important;
+}
+
+.override-really-clip {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+}
+
+.override-table-layout-fixed {
+    table-layout: fixed !important;
+}
+
+.override-vertical-align-middle {
+    vertical-align: middle !important;
+}
+
+@media print {
+    .override-print-display-none {
+        display: none !important;
+    }
+}

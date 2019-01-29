@@ -5,27 +5,20 @@ api_version: 1
 threadsafe: true
 
 handlers:
-  - url: /
-    static_files: static/index.html
-    upload: static/index.html
-    login: required
+  - url: /static
+    static_dir: static
     secure: always
 
-  - url: /static/([^/]*\.(css|js|png))
-    static_files: static/\1
-    upload: static/[^/]*\.(css|js|png)
-    secure: always
-
-  - url: /call/admin/[^/]*
-    script: main.application
-    login: admin
-    auth_fail_action: unauthorized
-    secure: always
-
-  - url: /call/[^/]*
+  - url: /call/.*
     script: main.application
     login: required
     auth_fail_action: unauthorized
+    secure: always
+
+  - url: /.*
+    static_files: static/main.html
+    upload: static/main.html
+    login: required
     secure: always
 
 skip_files:
@@ -33,7 +26,6 @@ skip_files:
   - ^(.*/)?.*~
   - ^(.*/)?.*\.py[co]
   - ^(.*/)?\..*
-  - ^(.*/)?.*\.coffee
   - ^(.*/)?.*\.md
   - ^LICENSE
 

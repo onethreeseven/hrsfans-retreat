@@ -1,58 +1,52 @@
 # TODO
 
 
-## v5 - React
+## Miscellaneous work
 
-This version switches to React from Knockout.  It might cause minor user-visible improvements, but
-the focus is getting off Knockout (and hopefully simplifying the HTML and CoffeeScript).
-
-
-## v6 - Bootstrap
-
-This version switches to Bootstrap from the custom CSS, thus making the interface look nicer.  It
-might also spawn UX improvements, but the focus is replacing the custom CSS.
-
-
-## v7 - User Experience Improvements
-
-  * Streamline the registration experience as much as possible
-    - Make clearer how to edit existing registrations
-  * More financial features, e.g. ready-made summary report(s) and accounting for HRSFANS advances
-  * Look into saving partial data or autosaving
-  * Improve error handling, especially if an API call crashes
-  * Refresh properly if an API call returns unauthorized
-  * Add an onbeforeunload handler
-
-
-## v8 - Build Process Overhaul and Technical Cleanup
-
-This has two major phases, with the common theme of improving the technical foundation.
-
-### Build Process Overhaul
-
-  * Make a Makefile
-  * Fix up the directory structure
-  * Minify the Javascript
-  * Look into npm or the like for dependencies
-
-### Technical Cleanup
-
-  * Consider merging model.py and main.py
-  * Double-check the Python for warts
-  * Go over the CoffeeScript and reorganize as desired
-  * Check any custom CSS / HTML for warts
-  * Run HTML and CSS validators
-  * Investigate unit testing
+  * Frontend code
+    - Consider extracting common code for forms with a variable number of fields
+  * Frontend-API interaction
+    - Consider returning objects instead of arrays
+    - Fix the setState-then-navigate wart in post()
+    - Finally expunge the synchronous-XMLHttpRequest warning
+    - Improve error handling, especially if the call crashes
+    - Refresh properly if the call returns unauthorized
+  * Server
+    - Deduplicate `get()` and `post()`
+    - Consider storing a generic object instead of a Model object in `State`
+    - Look into improving `assert` methods
+    - Try splitting payments and expenses
+    - Clean up the URL scheme and consider switching to `standardJavaScriptCase`
+  * UX
+    - Add HRSFANS advances to the financial report
+    - Consider restoring the guest list
+    - Overhaul sharing model to allow changing email and reduce unintuitive behavior
+  * General code review
 
 
-## v9 and Beyond - Documentation and Collaboration
+## Improve deployment
 
-  * Go over everything and make sure it's commented
+AWS has won the cloud wars, so it might be worth moving there.  At a minimum we should move to a more modern App Engine deployment process and upgrade to Python 3.
+
+
+## Add a proper build process
+
+We should do things like minify the Javascript and deal properly with dependencies.  This might be rendered trivial by `create-react-app`; we'll see.
+
+
+## Documentation and collaboration
+
+Some desirable things for the far future:
+
+  * Bring the summer party fork back into the fold
+  * Make sure all the tricky parts are commented
   * Finish the README
   * Find a collaborator
 
 
-## Other Feature Requests (as needed)
+## Other feature requests
+
+These have come in; we might need to do them someday.
 
   * Privacy filter on reserved rooms
   * Proper switch for closing registration
