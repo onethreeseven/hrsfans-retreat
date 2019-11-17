@@ -288,29 +288,33 @@ def process(state, username, message):
             interaction = Interaction(state, username)
 
     result['group'] = interaction.group
+    result['registrations'] = deepcopy(interaction.state['registrations'])
+    result['state'] = interaction.state
     result['timestamp'] = time.time()
     result['username'] = interaction.username
 
-    result['state'] = deepcopy(interaction.state)
+    # Registrations and associated charges are sent separately to simplify hiding private data
+    for reg in result['registrations'].values():
+        reg['charges'] = []
+    for payment in interaction.state['payments'].values():
+        for reg_id, amount in payment['allocation'].items():
+            result['registrations'][reg_id]['charges'].append({
+                'category': 'Payment or refund',
+                'amount': -amount,
+                'date': payment['date']
+            })
+    for expense in interaction.state['expenses'].values():
+        if expense['regId'] is not None:
+            result['registrations'][expense['regId']]['charges'].append({
+                'category': 'Expense: ' + expense['category'],
+                'amount': -expense['amount'],
+                'date': expense['date']
+            })
+
     if not interaction.is_admin:
         for reg_id, reg in interaction.state['registrations'].items():
             if reg['group'] != interaction.group:
-                result['state']['registrations'][reg_id] = {
-                    'name': reg['name'],
-                    'reservations': reg['reservations']
-                }
-        for payment_id, payment in interaction.state['payments'].items():
-            allocation = {reg_id: amount for reg_id, amount in payment['allocation'].items()
-                          if 'confirmed' in result['state']['registrations'][reg_id]}
-            if allocation:
-                result['state']['payments'][payment_id]['allocation'] = allocation
-                for field in ('amount', 'payer', 'method'):
-                    del result['state']['payments'][payment_id][field]
-            else:
-                del result['state']['payments'][payment_id]
-        for expense_id, expense in interaction.state['expenses'].items():
-            reg_id = expense['regId']
-            if reg_id is None or 'confirmed' not in result['state']['registrations'][reg_id]:
-                del result['state']['expenses'][expense_id]
+                result['registrations'][reg_id] = {k: reg[k] for k in ('name', 'reservations')}
+        result['state'] = {k: interaction.state[k] for k in ('title', 'admins', 'nights', 'houses')}
 
     return result, interaction.state

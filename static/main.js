@@ -1665,7 +1665,7 @@ const NotFoundModal = () => e(Modal, {title: 'Not found'}, singleContainerSectio
 
 const postprocessServerData = (serverData) => {
     // Make convenience copies of data on state with useful rearrangements
-    serverData.regsSorted = _(Object.entries(serverData.state.registrations))
+    serverData.regsSorted = _(Object.entries(pop(serverData, 'registrations')))
         .map(([id, reg]) => _.defaults({id}, reg))
         .sortBy(({name}) => name.toLowerCase())
         .value()
@@ -1686,21 +1686,8 @@ const postprocessServerData = (serverData) => {
         }
     }
 
-    // Assemble a temporary table of charges due to payments and expenses
-    const creditCharges = _.mapValues(serverData.state.registrations, () => [])
-    for (const {date, allocation} of Object.values(serverData.state.payments)) {
-        for (const [regId, amount] of Object.entries(allocation)) {
-            creditCharges[regId].push({category: 'Payment or refund', amount: -amount, date})
-        }
-    }
-    for (const {date, amount, category, regId} of Object.values(serverData.state.expenses)) {
-        if (regId) {
-            creditCharges[regId].push({category: `Expense: ${category}`, amount: -amount, date})
-        }
-    }
-
-    // Tag each registration with which nights it's staying and its total number of nights; collect
-    // charges, adjustments, and credits in a uniform manner; sum up the amount due
+    // Tag each registration with which nights it's staying and its total number of nights; add
+    // regular charges and adjustments; sum up the amount due
     for (const reg of serverData.regsSorted) {
         reg.nights = {}
         for (const key of reg.reservations) {
@@ -1708,7 +1695,7 @@ const postprocessServerData = (serverData) => {
         }
         reg.numNights = Object.values(reg.nights).length
 
-        if ('confirmed' in reg) {
+        if ('charges' in reg) {
             const nights = serverData.state.nights.filter(({id}) => reg.nights[id])
             reg.charges = [
                 ..._.filter([
@@ -1719,7 +1706,7 @@ const postprocessServerData = (serverData) => {
                     {category: 'Financial assistance', amount: -reg.assistance}
                 ], 'amount'),
                 ...reg.adjustments.map(adj => _.assign({category: 'Adjustment'}, adj)),
-                ..._.sortBy(creditCharges[reg.id], 'date')
+                ..._.sortBy(reg.charges, 'date')
             ]
             reg.due = _.sumBy(reg.charges, 'amount')
         }

@@ -5,6 +5,7 @@
 
   * General
     - Finish cleaning up the temporary scaffolding that enabled one registration per expense
+    - Look at whether more code should be moved into the backend from `postprocessServerData()`
     - Review the result of the 2020 overhaul for further improvements
     - Switch to cents
     - Comprehensive code review
@@ -15,8 +16,6 @@
     - See if there's a nice way to get `singleContainerSection` out of everything
     - Fix the setState-then-navigate wart in `post()`
     - Display a spinner when waiting for the API; finally expunge the synchronous-XMLHttpRequest warning
-  * Backend
-    - Find a more uniform way to hide private information
   * UX
     - Reword the voluntary contribution language to clarify that it is not per-night and that we might suggest less for short stays
     - Extend `reason` from adjustments to display payment methods and expense descriptions
