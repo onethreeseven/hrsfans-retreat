@@ -949,43 +949,66 @@ const RoomsTab = () => {
     ))
 }
 
+const table = ({columns, data, className}) => {
+    return e('table', {className: 'table ' + className},
+        _.some(columns, 'head') && e('thead', null, e('tr', null,
+            ...columns.map(({head, columnClass}) => e('th', {className: columnClass}, head))
+        )),
+        e('tbody', null, ...data.map(datum => e('tr', null,
+            ...columns.map(({cell, cellClass, columnClass}) => e('td', {
+                className: (cellClass ? cellClass(datum) : '') + ' ' + (columnClass || '')
+            }, cell(datum)))
+        )))
+    )
+}
+
 const RegistrationsTab = () => {
     const {regsSorted} = useContext(MainContext)
 
-    return e(Tab, null, singleContainerSection(e('table', {className: 'table is-striped'},
-        e('thead', null, e('tr', null,
-            e('th', null, 'Name'),
-            e('th', null, 'Nights'),
-            e('th', null, 'Due'),
-            e('th', {className: 'is-hidden-mobile'}, 'Contributions'),
-            e('th', {className: 'is-hidden-mobile'}, 'Assistance')
-        )),
-        e('tbody', null, ..._.sortBy(regsSorted,
-            reg => [reg.numNights > 0, reg.confirmed, Math.abs(reg.due) < 0.005]
-        ).map(reg => {
-            let dueCell = e('td')
-            if (!reg.confirmed) {
-                dueCell = e('td', {className: 'has-text-right has-background-grey-lighter'},
-                    'Unconfirmed'
-                )
-            } else if (Math.abs(reg.due) > 0.005) {
-                dueCell = e('td', {className: 'has-text-right has-background-warning'},
-                    dollars(reg.due, 2)
-                )
+    return e(Tab, null, singleContainerSection(table({
+        columns: [{
+            head: 'Name',
+            cell: ({id, name}) => e(Link, {to: `/registrations/view/${id}`}, name)
+        }, {
+            head: 'Nights',
+            cell: ({numNights}) => numNights || '',
+            cellClass: () => 'has-text-right'
+        }, {
+            head: 'Due',
+            cell: ({confirmed, due}) => {
+                if (!confirmed) {
+                    return 'Unconfirmed'
+                }
+                if (Math.abs(due) > 0.005) {
+                    return dollars(due, 2)
+                }
+                return null
+            },
+            cellClass: ({confirmed, due}) => {
+                if (!confirmed) {
+                    return 'has-text-right has-background-grey-lighter'
+                }
+                if (Math.abs(due) > 0.005) {
+                    return 'has-text-right has-background-warning'
+                }
+                return ''
             }
-            return e('tr', null,
-                e('td', null, e(Link, {to: `/registrations/view/${reg.id}`}, reg.name)),
-                e('td', {className: 'has-text-right'}, reg.numNights || ''),
-                dueCell,
-                e('td', {className: 'has-text-right is-hidden-mobile'},
-                    dollars(reg.contributions, 2, true)
-                ),
-                e('td', {className: 'has-text-right is-hidden-mobile'},
-                    dollars(reg.assistance, 2, true)
-                )
-            )
-        }))
-    )))
+        }, {
+            head: 'Contributions',
+            cell: ({contributions}) => dollars(contributions, 2, true),
+            cellClass: () => 'has-text-right',
+            columnClass: 'is-hidden-mobile'
+        }, {
+            head: 'Assistance',
+            cell: ({assistance}) => dollars(assistance, 2, true),
+            cellClass: () => 'has-text-right',
+            columnClass: 'is-hidden-mobile'
+        }],
+        data: _.sortBy(regsSorted,
+            reg => [reg.numNights > 0, reg.confirmed, Math.abs(reg.due) < 0.005]
+        ),
+        className: 'is-striped'
+    })))
 }
 
 const CreditGroupTab = ({kind}) => {
