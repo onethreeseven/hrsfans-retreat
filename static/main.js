@@ -1669,7 +1669,6 @@ const postprocessServerData = (serverData) => {
         .map(([id, reg]) => _.defaults({id}, reg))
         .sortBy(({name}) => name.toLowerCase())
         .value()
-    serverData.isAdmin = _.includes(serverData.state.admins, serverData.username)
 
     // Assemble a temporary table of the cost and night ID for each reservation ID
     const resIds = {}

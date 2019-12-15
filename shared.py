@@ -288,6 +288,7 @@ def process(state, username, message):
             interaction = Interaction(state, username)
 
     result['group'] = interaction.group
+    result['isAdmin'] = interaction.is_admin
     result['registrations'] = deepcopy(interaction.state['registrations'])
     result['state'] = interaction.state
     result['timestamp'] = time.time()
@@ -315,6 +316,6 @@ def process(state, username, message):
         for reg_id, reg in interaction.state['registrations'].items():
             if reg['group'] != interaction.group:
                 result['registrations'][reg_id] = {k: reg[k] for k in ('name', 'reservations')}
-        result['state'] = {k: interaction.state[k] for k in ('title', 'admins', 'nights', 'houses')}
+        result['state'] = {k: interaction.state[k] for k in ('title', 'nights', 'houses')}
 
     return result, interaction.state
