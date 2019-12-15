@@ -647,7 +647,7 @@ const PaymentTable = ({deleteId, setDeleteId, interactive = true}) => {
 }
 
 const ExpenseTable = ({deleteId, setDeleteId, interactive = true}) => {
-    const {state: {registrations, expenses}} = useContext(MainContext)
+    const {state: {expenses}, regsSorted} = useContext(MainContext)
 
     const header = ['Date', 'Amount', 'Payer', 'Category', 'Description']
         .map(label => e('th', null, label))
@@ -664,7 +664,9 @@ const ExpenseTable = ({deleteId, setDeleteId, interactive = true}) => {
         const amountText = dollars(amount)
         let payerText = e('span', {className: 'has-text-danger'}, '(none)')
         if (regId) {
-            payerText = e(Link, {to: `/registrations/view/${regId}`}, registrations[regId].name)
+            payerText = e(Link, {to: `/registrations/view/${regId}`},
+                _.find(regsSorted, {id: regId}).name
+            )
         }
 
         return e('tr', {className: id === deleteId ? 'has-background-warning' : ''},
