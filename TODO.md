@@ -1,32 +1,28 @@
 # TODO
 
 
-## Miscellaneous work
+## Miscellaneous improvements
 
-  * Frontend code
-    - Consider extracting common code for forms with a variable number of fields
-  * Frontend-API interaction
-    - Consider returning objects instead of arrays
-    - Fix the setState-then-navigate wart in post()
-    - Finally expunge the synchronous-XMLHttpRequest warning
-    - Improve error handling, especially if the call crashes
-    - Refresh properly if the call returns unauthorized
-  * Server
-    - Deduplicate `get()` and `post()`
-    - Consider storing a generic object instead of a Model object in `State`
-    - Look into improving `assert` methods
-    - Try splitting payments and expenses
-    - Clean up the URL scheme and consider switching to `standardJavaScriptCase`
+  * General
+    - Finish cleaning up the temporary scaffolding that enabled one registration per expense
+    - Review the result of the 2020 overhaul for further improvements
+    - Switch to cents
+    - Comprehensive code review
+  * Frontend
+    - Fix the 500 that happens if you leave the tab open long enough for your token to expire
+    - Take advantage of the React Router [5.1 update](https://reacttraining.com/blog/react-router-v5-1/)
+    - Clean up the confusing indirection in `RegisterModal`'s `onSuccess()`
+    - See if there's a nice way to get `singleContainerSection` out of everything
+    - Fix the setState-then-navigate wart in `post()`
+    - Display a spinner when waiting for the API; finally expunge the synchronous-XMLHttpRequest warning
+  * Backend
+    - Find a more uniform way to hide private information
   * UX
+    - Reword the voluntary contribution language to clarify that it is not per-night and that we might suggest less for short stays
+    - Extend `reason` from adjustments to display payment methods and expense descriptions
     - Add HRSFANS advances to the financial report
-    - Consider restoring the guest list
+    - Restore the guest list
     - Overhaul sharing model to allow changing email and reduce unintuitive behavior
-  * General code review
-
-
-## Improve deployment
-
-AWS has won the cloud wars, so it might be worth moving there.  At a minimum we should move to a more modern App Engine deployment process and upgrade to Python 3.
 
 
 ## Add a proper build process

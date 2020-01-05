@@ -1,34 +1,15 @@
-application: hrsfansretreat
-version: 1
-runtime: python27
-api_version: 1
-threadsafe: true
+runtime: python37
 
 handlers:
   - url: /static
     static_dir: static
     secure: always
 
-  - url: /call/.*
-    script: main.application
-    login: required
-    auth_fail_action: unauthorized
+  - url: /call
+    script: auto
     secure: always
 
   - url: /.*
     static_files: static/main.html
     upload: static/main.html
-    login: required
     secure: always
-
-skip_files:
-  - ^(.*/)?#.*#
-  - ^(.*/)?.*~
-  - ^(.*/)?.*\.py[co]
-  - ^(.*/)?\..*
-  - ^(.*/)?.*\.md
-  - ^LICENSE
-
-libraries:
-  - name: yaml
-    version: "3.10"
