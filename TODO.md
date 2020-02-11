@@ -15,6 +15,7 @@
     - See if there's a nice way to get `singleContainerSection` out of everything
     - Fix the setState-then-navigate wart in `post()`
     - Display a spinner when waiting for the API; finally expunge the synchronous-XMLHttpRequest warning
+    - Names in the snapshot view shouldn't be links
   * Backend
     - Find a more uniform way to hide private information
   * UX
